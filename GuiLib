@@ -1848,7 +1848,7 @@ local function unpackt(array : table)
 	local val = ""
 	local i = 0
 	for _,v in pairs(array) do
-		if i < 3 then
+		if i < 10 then
 			val = val .. v .. ", "
 			i += 1
 		else
