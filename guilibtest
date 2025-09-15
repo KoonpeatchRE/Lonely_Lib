@@ -6577,57 +6577,108 @@ end
 		SetFolder()
 
 		function Luna:SaveConfig(Path)
-			if isStudio then return "Config system unavailable." end
+	if isStudio then return "Config system unavailable." end
 
-			if (not Path) then
-				return false, "Please select a config file."
-			end
+	if (not Path) then
+		return false, "Please select a config file."
+	end
 
-			local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
+	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
 
-			local data = {
-				objects = {}
+	local data = {
+		objects = {},
+		customData = {} -- Add custom data section
+	}
+
+	-- Save regular UI elements
+	for flag, option in next, Luna.Options do
+		if not ClassParser[option.Class] then continue end
+		if option.IgnoreConfig then continue end
+
+		table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
+	end	
+
+	-- Save custom data like saved position
+	if savedPosition then
+		local pos = savedPosition.Position
+		data.customData.savedFishingPosition = {
+			X = pos.X,
+			Y = pos.Y,
+			Z = pos.Z,
+			-- Also save rotation if needed
+			LookVector = {
+				X = savedPosition.LookVector.X,
+				Y = savedPosition.LookVector.Y,
+				Z = savedPosition.LookVector.Z
 			}
+		}
+	end
 
-			for flag, option in next, Luna.Options do
-				if not ClassParser[option.Class] then continue end
-				if option.IgnoreConfig then continue end
+	local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+	if not success then
+		return false, "Unable to encode into JSON data"
+	end
 
-				table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
-			end	
+	writefile(fullPath, encoded)
+	return true
+end
 
-			local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
-			if not success then
-				return false, "Unable to encode into JSON data"
-			end
+-- Modified LoadConfig function (you'll need to add this too)
+function Luna:LoadConfig(Path)
+	if isStudio then return "Config system unavailable." end
 
-			writefile(fullPath, encoded)
-			return true
+	if (not Path) then
+		return false, "Please select a config file."
+	end
+
+	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
+
+	if not isfile(fullPath) then
+		return false, "Config file does not exist."
+	end
+
+	local success, data = pcall(function()
+		return HttpService:JSONDecode(readfile(fullPath))
+	end)
+
+	if not success then
+		return false, "Unable to decode JSON data"
+	end
+
+	-- Load regular UI elements
+	for _, obj in next, data.objects do
+		if Luna.Options[obj.flag] and ClassParser[Luna.Options[obj.flag].Class] then
+			task.spawn(function()
+				ClassParser[Luna.Options[obj.flag].Class].Load(obj.flag, obj)
+			end)
 		end
+	end
 
-		function Luna:LoadConfig(Path)
-			if isStudio then return "Config system unavailable." end
-
-			if (not Path) then
-				return false, "Please select a config file."
-			end
-
-			local file = Luna.Folder .. "/settings/" .. Path .. ".luna"
-			if not isfile(file) then return false, "Invalid file" end
-
-			local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
-			if not success then return false, "Unable to decode JSON data." end
-
-			for _, option in next, decoded.objects do
-				if ClassParser[option.type] then
-					task.spawn(function() 
-						ClassParser[option.type].Load(option.flag, option) 
-					end)
-				end
-			end
-
-			return true
+	-- Load custom data like saved position
+	if data.customData and data.customData.savedFishingPosition then
+		local posData = data.customData.savedFishingPosition
+		local lookVec = posData.LookVector or {X = 0, Y = 0, Z = 1}
+		
+		-- Reconstruct CFrame
+		savedPosition = CFrame.lookAt(
+			Vector3.new(posData.X, posData.Y, posData.Z),
+			Vector3.new(posData.X + lookVec.X, posData.Y + lookVec.Y, posData.Z + lookVec.Z)
+		)
+		
+		-- Update the label if it exists
+		if Label1 then
+			local roundedX = math.floor(posData.X + 0.5)
+			local roundedY = math.floor(posData.Y + 0.5) 
+			local roundedZ = math.floor(posData.Z + 0.5)
+			local posString = roundedX .. ", " .. roundedY .. ", " .. roundedZ
+			Label1:Set(posString)
 		end
+		
+		print("Loaded fishing position: " .. math.floor(posData.X + 0.5) .. ", " .. math.floor(posData.Y + 0.5) .. ", " .. math.floor(posData.Z + 0.5))
+	end
+
+	return true
+end
 
 		function Luna:LoadAutoloadConfig()
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
