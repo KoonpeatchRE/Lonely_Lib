@@ -2755,6 +2755,143 @@ function Luna:CreateWindow(WindowSettings)
 				tween(b.Line, {BackgroundTransparency = 0})
 			end
 
+			ClassParser["Button"] = {
+    Save = function(flag, option)
+        return {
+            flag = flag,
+            type = "Button",
+            data = option.ButtonData or {} -- Store custom button data
+        }
+    end,
+    
+    Load = function(flag, data)
+        if Luna.Options[flag] and Luna.Options[flag].SetButtonData then
+            Luna.Options[flag]:SetButtonData(data.data)
+        end
+    end
+}
+
+-- Modified CreateButton function to integrate with config system
+function Tab:CreateButton(ButtonSettings, Flag)
+
+    ButtonSettings = Kwargify({
+        Name = "Button",
+        Description = nil,
+        Callback = function()
+
+        end,
+    }, ButtonSettings or {})
+
+    local ButtonV = {
+        Hover = false,
+        Settings = ButtonSettings,
+        Flag = Flag,
+        Class = "Button", -- Add class for config system
+        ButtonData = {} -- Store custom data here
+    }
+
+    -- Register with Luna's Options system if flag is provided
+    if Flag then
+        Luna.Options[Flag] = ButtonV
+    end
+
+    local Button
+    if ButtonSettings.Description == nil and ButtonSettings.Description ~= "" then
+        Button = Elements.Template.Button:Clone()
+    else
+        Button = Elements.Template.ButtonDesc:Clone()
+    end
+    Button.Name = ButtonSettings.Name
+    Button.Title.Text = ButtonSettings.Name
+    if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+        Button.Desc.Text = ButtonSettings.Description
+    end
+    Button.Visible = true
+    Button.Parent = TabPage
+
+    Button.UIStroke.Transparency = 1
+    Button.Title.TextTransparency = 1
+    if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+        Button.Desc.TextTransparency = 1
+    end
+
+    TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+    TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+    TweenService:Create(Button.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+    if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+        TweenService:Create(Button.Desc, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+    end
+
+    Button.Interact["MouseButton1Click"]:Connect(function()
+        local Success,Response = pcall(ButtonSettings.Callback)
+
+        if not Success then
+            TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+            TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+            TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+            Button.Title.Text = "Callback Error"
+            print("Luna Interface Suite | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
+            wait(0.5)
+            Button.Title.Text = ButtonSettings.Name
+            TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+            TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
+            TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+        else
+            tween(Button.UIStroke, {Color = Color3.fromRGB(136, 131, 163)})
+            wait(0.2)
+            if ButtonV.Hover then
+                tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+            else
+                tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+            end
+        end
+    end)
+
+    Button["MouseEnter"]:Connect(function()
+        ButtonV.Hover = true
+        tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+    end)
+
+    Button["MouseLeave"]:Connect(function()
+        ButtonV.Hover = false
+        tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+    end)
+
+    function ButtonV:Set(ButtonSettings2)
+        ButtonSettings2 = Kwargify({
+            Name = ButtonSettings.Name,
+            Description = ButtonSettings.Description,
+            Callback = ButtonSettings.Callback
+        }, ButtonSettings2 or {})
+
+        ButtonSettings = ButtonSettings2
+        ButtonV.Settings = ButtonSettings2
+
+        Button.Name = ButtonSettings.Name
+        Button.Title.Text = ButtonSettings.Name
+        if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" and Button.Desc ~= nil then
+            Button.Desc.Text = ButtonSettings.Description
+        end
+    end
+
+    -- New method to store data that will be saved in configs
+    function ButtonV:SetButtonData(data)
+        ButtonV.ButtonData = data
+    end
+
+    -- New method to get stored data
+    function ButtonV:GetButtonData()
+        return ButtonV.ButtonData
+    end
+
+    function ButtonV:Destroy()
+        Button.Visible = false
+        Button:Destroy()
+    end
+
+    return ButtonV
+end
+
 			-- Button
 			function Section:CreateButton(ButtonSettings)
 				TabPage.Position = UDim2.new(0,0,0,28)
@@ -4349,141 +4486,219 @@ function Luna:CreateWindow(WindowSettings)
 		end
 
 		-- Button
-		function Tab:CreateButton(ButtonSettings, Flag)
+		function Tab:CreateButton(ButtonSettings)
 
-	ButtonSettings = Kwargify({
-		Name = "Button",
-		Description = nil,
-		Callback = function()
+			ButtonSettings = Kwargify({
+				Name = "Button",
+				Description = nil,
+				Callback = function()
 
-		end,
-	}, ButtonSettings or {})
+				end,
+			}, ButtonSettings or {})
 
-	local ButtonV = {
-		Hover = false,
-		Settings = ButtonSettings,
-		Flag = Flag -- Store the flag
-	}
-
-	-- Initialize flag system if it doesn't exist
-	if Flag then
-		Luna.Flags = Luna.Flags or {}
-		Luna.Flags[Flag] = Luna.Flags[Flag] or {
-			Value = nil,
-			LastClicked = 0
-		}
-	end
-
-	local Button
-	if ButtonSettings.Description == nil and ButtonSettings.Description ~= "" then
-		Button = Elements.Template.Button:Clone()
-	else
-		Button = Elements.Template.ButtonDesc:Clone()
-	end
-	Button.Name = ButtonSettings.Name
-	Button.Title.Text = ButtonSettings.Name
-	if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
-		Button.Desc.Text = ButtonSettings.Description
-	end
-	Button.Visible = true
-	Button.Parent = TabPage
-
-	Button.UIStroke.Transparency = 1
-	Button.Title.TextTransparency = 1
-	if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
-		Button.Desc.TextTransparency = 1
-	end
-
-	TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
-	TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
-	TweenService:Create(Button.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
-	if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
-		TweenService:Create(Button.Desc, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
-	end
-
-	Button.Interact["MouseButton1Click"]:Connect(function()
-		local Success,Response = pcall(ButtonSettings.Callback)
-
-		-- Update flag when button is clicked
-		if Flag and Success then
-			Luna.Flags[Flag] = {
-				Value = ButtonSettings.Name,
-				LastClicked = tick(),
-				Position = nil -- We'll store position data here
+			local ButtonV = {
+				Hover = false,
+				Settings = ButtonSettings
 			}
-		end
 
-		if not Success then
-			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
-			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
-			TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
-			Button.Title.Text = "Callback Error"
-			print("Luna Interface Suite | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
-			wait(0.5)
-			Button.Title.Text = ButtonSettings.Name
-			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
-			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
-			TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
-		else
-			tween(Button.UIStroke, {Color = Color3.fromRGB(136, 131, 163)})
-			wait(0.2)
-			if ButtonV.Hover then
-				tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+
+			local Button
+			if ButtonSettings.Description == nil and ButtonSettings.Description ~= "" then
+				Button = Elements.Template.Button:Clone()
 			else
-				tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+				Button = Elements.Template.ButtonDesc:Clone()
 			end
+			Button.Name = ButtonSettings.Name
+			Button.Title.Text = ButtonSettings.Name
+			if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+				Button.Desc.Text = ButtonSettings.Description
+			end
+			Button.Visible = true
+			Button.Parent = TabPage
+
+			Button.UIStroke.Transparency = 1
+			Button.Title.TextTransparency = 1
+			if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+				Button.Desc.TextTransparency = 1
+			end
+
+			TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+			TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+			TweenService:Create(Button.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+			if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" then
+				TweenService:Create(Button.Desc, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+			end
+
+			Button.Interact["MouseButton1Click"]:Connect(function()
+				local Success,Response = pcall(ButtonSettings.Callback)
+
+				if not Success then
+					TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+					TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+					TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+					Button.Title.Text = "Callback Error"
+					print("Luna Interface Suite | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
+					wait(0.5)
+					Button.Title.Text = ButtonSettings.Name
+					TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+					TweenService:Create(Button, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
+					TweenService:Create(Button.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+				else
+					tween(Button.UIStroke, {Color = Color3.fromRGB(136, 131, 163)})
+					wait(0.2)
+					if ButtonV.Hover then
+						tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+					else
+						tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+					end
+				end
+			end)
+
+			Button["MouseEnter"]:Connect(function()
+				ButtonV.Hover = true
+				tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+			end)
+
+			Button["MouseLeave"]:Connect(function()
+				ButtonV.Hover = false
+				tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+			end)
+
+			function ButtonV:Set(ButtonSettings2)
+				ButtonSettings2 = Kwargify({
+					Name = ButtonSettings.Name,
+					Description = ButtonSettings.Description,
+					Callback = ButtonSettings.Callback
+				}, ButtonSettings2 or {})
+
+				ButtonSettings = ButtonSettings2
+				ButtonV.Settings = ButtonSettings2
+
+				Button.Name = ButtonSettings.Name
+				Button.Title.Text = ButtonSettings.Name
+				if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" and Button.Desc ~= nil then
+					Button.Desc.Text = ButtonSettings.Description
+				end
+			end
+
+			function ButtonV:Destroy()
+				Button.Visible = false
+				Button:Destroy()
+			end
+
+			return ButtonV
 		end
-	end)
 
-	Button["MouseEnter"]:Connect(function()
-		ButtonV.Hover = true
-		tween(Button.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
-	end)
+		-- Label
+		function Tab:CreateLabel(LabelSettings)
 
-	Button["MouseLeave"]:Connect(function()
-		ButtonV.Hover = false
-		tween(Button.UIStroke, {Color = Color3.fromRGB(64,61,76)})
-	end)
+			local LabelV = {}
 
-	function ButtonV:Set(ButtonSettings2)
-		ButtonSettings2 = Kwargify({
-			Name = ButtonSettings.Name,
-			Description = ButtonSettings.Description,
-			Callback = ButtonSettings.Callback
-		}, ButtonSettings2 or {})
+			LabelSettings = Kwargify({
+				Text = "Label",
+				Style = 1
+			}, LabelSettings or {}) 
 
-		ButtonSettings = ButtonSettings2
-		ButtonV.Settings = ButtonSettings2
+			LabelV.Settings = LabelSettings
 
-		Button.Name = ButtonSettings.Name
-		Button.Title.Text = ButtonSettings.Name
-		if ButtonSettings.Description ~= nil and ButtonSettings.Description ~= "" and Button.Desc ~= nil then
-			Button.Desc.Text = ButtonSettings.Description
+			local Label
+			if LabelSettings.Style == 1 then
+				Label = Elements.Template.Label:Clone()
+			elseif LabelSettings.Style == 2 then
+				Label = Elements.Template.Info:Clone()
+			elseif LabelSettings.Style == 3 then
+				Label = Elements.Template.Warn:Clone()
+			end
+
+			Label.Text.Text = LabelSettings.Text
+			Label.Visible = true
+			Label.Parent = TabPage
+
+			Label.BackgroundTransparency = 1
+			Label.UIStroke.Transparency = 1
+			Label.Text.TextTransparency = 1
+
+			if LabelSettings.Style ~= 1 then
+				TweenService:Create(Label, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.8}):Play()
+			else
+				TweenService:Create(Label, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+			end
+			TweenService:Create(Label.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+			TweenService:Create(Label.Text, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+
+			function LabelV:Set(NewLabel)
+				LabelSettings.Text = NewLabel
+				LabelV.Settings = LabelSettings
+				Label.Text.Text = NewLabel
+			end
+
+			function LabelV:Destroy()
+				Label.Visible = false
+				Label:Destroy()
+			end
+
+			return LabelV
 		end
-	end
 
-	-- New method to store custom data in the flag
-	function ButtonV:SetFlagData(data)
-		if Flag then
-			Luna.Flags[Flag].Position = data
+		-- Paragraph
+		function Tab:CreateParagraph(ParagraphSettings)
+
+			ParagraphSettings = Kwargify({
+				Title = "Paragraph",
+				Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus venenatis lacus sed tempus eleifend. Mauris interdum bibendum felis, in tempor augue egestas vel. Praesent tristique consectetur ex, eu pretium sem placerat non. Vestibulum a nisi sit amet augue facilisis consectetur sit amet et nunc. Integer fermentum ornare cursus. Pellentesque sed ultricies metus, ut egestas metus. Vivamus auctor erat ac sapien vulputate, nec ultricies sem tempor. Quisque leo lorem, faucibus nec pulvinar nec, congue eu velit. Duis sodales massa efficitur imperdiet ultrices. Donec eros ipsum, ornare pharetra purus aliquam, tincidunt elementum nisi. Ut mi tortor, feugiat eget nunc vitae, facilisis interdum dui. Vivamus ullamcorper nunc dui, a dapibus nisi pretium ac. Integer eleifend placerat nibh, maximus malesuada tellus. Cras in justo in ligula scelerisque suscipit vel vitae quam."
+			}, ParagraphSettings or {})
+
+			local ParagraphV = {
+				Settings = ParagraphSettings
+			}
+
+			local Paragraph = Elements.Template.Paragraph:Clone()
+			Paragraph.Title.Text = ParagraphSettings.Title
+			Paragraph.Text.Text = ParagraphSettings.Text
+			Paragraph.Visible = true
+			Paragraph.Parent = TabPage
+
+			Paragraph.BackgroundTransparency = 1
+			Paragraph.UIStroke.Transparency = 1
+			Paragraph.Title.TextTransparency = 1
+			Paragraph.Text.TextTransparency = 1
+
+			TweenService:Create(Paragraph, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+			TweenService:Create(Paragraph.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+			TweenService:Create(Paragraph.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+			TweenService:Create(Paragraph.Text, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()	
+
+			function ParagraphV:Update()
+				Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, math.huge)
+				Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y)
+				tween(Paragraph, {Size = UDim2.new(Paragraph.Size.X.Scale, Paragraph.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y + 40)})
+			end
+
+			function ParagraphV:Set(NewParagraphSettings)
+
+				NewParagraphSettings = Kwargify({
+					Title = ParagraphSettings.Title,
+					Text = ParagraphSettings.Text
+				}, NewParagraphSettings or {})
+
+				ParagraphV.Settings = NewParagraphSettings
+
+				Paragraph.Title.Text = NewParagraphSettings.Title
+				Paragraph.Text.Text = NewParagraphSettings.Text
+
+				ParagraphV:Update()
+
+			end
+
+			function ParagraphV:Destroy()
+				Paragraph.Visible = false
+				Paragraph:Destroy()
+			end
+
+			ParagraphV:Update()
+
+			return ParagraphV
 		end
-	end
-
-	-- New method to get custom data from the flag
-	function ButtonV:GetFlagData()
-		if Flag and Luna.Flags[Flag] then
-			return Luna.Flags[Flag].Position
-		end
-		return nil
-	end
-
-	function ButtonV:Destroy()
-		Button.Visible = false
-		Button:Destroy()
-	end
-
-	return ButtonV
-end
 
 		-- Slider
 		function Tab:CreateSlider(SliderSettings, Flag)
