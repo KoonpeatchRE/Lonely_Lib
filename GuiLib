@@ -6630,47 +6630,6 @@ function Luna:LoadConfig(Path)
 	return true
 end
 
--- Your button remains the same, but you can add a save confirmation
-MainAutofarmTab:CreateButton({
-    Name = "Save Position For Fishing",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
-            savedPosition = LocalPlayer.Character.HumanoidRootPart.CFrame
-            local pos = savedPosition.Position
-            
-            -- Round to nearest whole numbers
-            local roundedX = math.floor(pos.X + 0.5)
-            local roundedY = math.floor(pos.Y + 0.5)
-            local roundedZ = math.floor(pos.Z + 0.5)
-            
-            print("Position saved:")
-            print("X: " .. roundedX)
-            print("Y: " .. roundedY) 
-            print("Z: " .. roundedZ)
-            
-            -- Show rounded coordinates in label
-            local posString = roundedX .. ", " .. roundedY .. ", " .. roundedZ
-            Label1:Set(posString)
-            
-            -- Optional: Auto-save to current config
-            -- Luna:SaveConfig("AutoSave") -- Uncomment if you want auto-save
-        end
-    end
-})
-
--- Optional: Add a button to load saved position
-MainAutofarmTab:CreateButton({
-    Name = "Teleport To Saved Position",
-    Callback = function()
-        if savedPosition and LocalPlayer.Character and LocalPlayer.Character.HumanoidRootPart then
-            LocalPlayer.Character.HumanoidRootPart.CFrame = savedPosition
-            print("Teleported to saved fishing position")
-        else
-            print("No saved position found!")
-        end
-    end
-})
-
 		function Luna:LoadAutoloadConfig()
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
 
