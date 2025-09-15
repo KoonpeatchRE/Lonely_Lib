@@ -1,11 +1,31 @@
+--[[
+
+Luna Interface Suite
+by Nebula Softworks
+
+Main Credits
+
+Hunter (Nebula Softworks) | Designing And Programming | Main Developer
+JustHey (Nebula Softworks) | Configurations, Bug Fixing And More! | Co Developer
+Throit | Color Picker
+Wally | Dragging And Certain Functions
+Sirius | PCall Parsing, Notifications, Slider And Home Tab
+Luna Executor | Original UI
+
+
+Extra Credits / Provided Certain Elements
+
+Pookie Pepelss | Bug Tester
+Inori | Configuration Concept
+Latte Softworks and qweery | Lucide Icons And Material Icons
+kirill9655 | Loading Circle
+Deity/dp4pv/x64x70 | Certain Scripting and Testing ig
+
+]]
 
 local Release = "Prerelease Beta 6.1"
 
-local Luna = { 
-	Folder = "Luna", 
-	Options = {}, 
-	ThemeGradient = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(117, 164, 206)), ColorSequenceKeypoint.new(0.50, Color3.fromRGB(123, 201, 201)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(224, 138, 175))} 
-}
+local Luna = { Folder = "Luna", Options = {}, ThemeGradient = ColorSequence.new{ColorSequenceKeypoint.new(0.00, Color3.fromRGB(117, 164, 206)), ColorSequenceKeypoint.new(0.50, Color3.fromRGB(123, 201, 201)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(224, 138, 175))} }
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -1803,7 +1823,7 @@ local function unpackt(array : table)
 	local val = ""
 	local i = 0
 	for _,v in pairs(array) do
-		if i < 5 then
+		if i < 6 then
 			val = val .. v .. ", "
 			i += 1
 		else
@@ -2385,7 +2405,7 @@ function Luna:CreateWindow(WindowSettings)
 				if KeyFound then 
 					for _, instance in pairs(KeySystem:GetDescendants()) do
 						if instance.ClassName ~= "UICorner" and instance.ClassName ~= "UIPadding" then
-							if instance.ClassName ~= "UIStroke" and instance.ClassName ~= "UIListLayout" then
+							if instance.ClassName ~= "UIStroke" then
 								tween(instance, {BackgroundTransparency = 1}, nil,TweenInfo.new(0.6, Enum.EasingStyle.Exponential))
 							end
 							if instance.ClassName == "ImageButton" then
