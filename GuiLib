@@ -5554,355 +5554,406 @@ end
 
 		-- Dropdown
 		function Tab:CreateDropdown(DropdownSettings, Flag)
-			local DropdownV = { IgnoreConfig = false, Class = "Dropdown", Settings = DropdownSettings}
+	local DropdownV = { IgnoreConfig = false, Class = "Dropdown", Settings = DropdownSettings}
 
-			DropdownSettings = Kwargify({
-				Name = "Dropdown",
-				Description = nil,
-				Options = {"Option 1", "Option 2"},
-				CurrentOption = {"Option 1"},
-				MultipleOptions = false,
-				SpecialType = nil, -- currently onl player, might add more soon
-				Callback = function(Options)
-					-- The function that takes place when the selected option is changed
-					-- The variable (Options) is a table of strings for the current selected options or a string if multioptions is false
-				end,
-			}, DropdownSettings or {})
+	DropdownSettings = Kwargify({
+		Name = "Dropdown",
+		Description = nil,
+		Options = {"Option 1", "Option 2"},
+		CurrentOption = {"Option 1"},
+		MultipleOptions = false,
+		SpecialType = nil, -- currently only player, might add more soon
+		Callback = function(Options)
+			-- The function that takes place when the selected option is changed
+			-- The variable (Options) is a table of strings for the current selected options or a string if multioptions is false
+		end,
+	}, DropdownSettings or {})
 
-			DropdownV.CurrentOption = DropdownSettings.CurrentOption
+	DropdownV.CurrentOption = DropdownSettings.CurrentOption
 
-			local descriptionbool = false
-			if DropdownSettings.Description ~= nil and DropdownSettings.Description ~= "" then
-				descriptionbool = true
-			end
-			local closedsize
-			local openedsize
-			if descriptionbool then
-				closedsize = 48
-				openedsize = 170
-			elseif not descriptionbool then
-				closedsize = 38
-				openedsize = 160
-			end
-			local opened = false
+	local descriptionbool = false
+	if DropdownSettings.Description ~= nil and DropdownSettings.Description ~= "" then
+		descriptionbool = true
+	end
+	local closedsize
+	local openedsize
+	if descriptionbool then
+		closedsize = 48
+		openedsize = 170
+	elseif not descriptionbool then
+		closedsize = 38
+		openedsize = 160
+	end
+	local opened = false
 
-			local Dropdown
-			if descriptionbool then Dropdown = Elements.Template.DropdownDesc:Clone() else Dropdown = Elements.Template.Dropdown:Clone() end
+	local Dropdown
+	if descriptionbool then Dropdown = Elements.Template.DropdownDesc:Clone() else Dropdown = Elements.Template.Dropdown:Clone() end
 
-			Dropdown.Name = DropdownSettings.Name
+	Dropdown.Name = DropdownSettings.Name
+	Dropdown.Title.Text = DropdownSettings.Name
+	if descriptionbool then Dropdown.Desc.Text = DropdownSettings.Description end
+
+	Dropdown.Parent = TabPage
+	Dropdown.Visible = true
+
+	local function Toggle()
+		opened = not opened
+		if opened then
+			tween(Dropdown.icon, {Rotation = 180})
+			tween(Dropdown, {Size = UDim2.new(1, -25, 0, openedsize)})
+		else
+			tween(Dropdown.icon, {Rotation = 0})
+			tween(Dropdown, {Size = UDim2.new(1, -25, 0, closedsize)})
+		end
+	end
+
+	local function SafeCallback(param, c2)
+		local Success, Response = pcall(function()
+			DropdownSettings.Callback(param)
+		end)
+		if not Success then
+			TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
+			TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
+			TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
+			Dropdown.Title.Text = "Callback Error"
+			print("Luna Interface Suite | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+			wait(0.5)
 			Dropdown.Title.Text = DropdownSettings.Name
-			if descriptionbool then Dropdown.Desc.Text = DropdownSettings.Description end
+			TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
+			TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
+			TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+		end
+		if Success and c2 then
+			c2()
+		end
+	end
 
-			Dropdown.Parent = TabPage
-			Dropdown.Visible = true
-
-			local function Toggle()
-				opened = not opened
-				if opened then
-					tween(Dropdown.icon, {Rotation = 180})
-					tween(Dropdown, {Size = UDim2.new(1, -25, 0, openedsize)})
-				else
-					tween(Dropdown.icon, {Rotation = 0})
-					tween(Dropdown, {Size = UDim2.new(1, -25, 0, closedsize)})
-				end
+	-- Search functionality - fixed by justhey
+	Dropdown.Selected:GetPropertyChangedSignal("Text"):Connect(function()
+		local text = Dropdown.Selected.Text:lower()
+		for _, Item in ipairs(Dropdown.List:GetChildren()) do
+			if Item:IsA("TextLabel") and Item.Name ~= "Template" then
+				Item.Visible = text == "" or string.find(Item.Name:lower(), text, 1, true) ~= nil
 			end
+		end
+	end)
 
-			local function SafeCallback(param, c2)
-				local Success, Response = pcall(function()
-					DropdownSettings.Callback(param)
-				end)
-				if not Success then
-					TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
-					TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
-					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
-					Dropdown.Title.Text = "Callback Error"
-					print("Luna Interface Suite | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
-					wait(0.5)
-					Dropdown.Title.Text = DropdownSettings.Name
-					TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
-					TweenService:Create(Dropdown, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
-					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
-				end
-				if Success and c2 then
-					c2()
-				end
+	local function Clear()
+		for _, option in ipairs(Dropdown.List:GetChildren()) do
+			if option.ClassName == "TextLabel" and option.Name ~= "Template" then
+				option:Destroy()
 			end
+		end
+	end
 
-			-- fixed by justhey
-			Dropdown.Selected:GetPropertyChangedSignal("Text"):Connect(function()
-				local text = Dropdown.Selected.Text:lower()
-				for _, Item in ipairs(Dropdown.List:GetChildren()) do
-					if Item:IsA("TextLabel") and Item.Name ~= "Template" then
-						Item.Visible = text == "" or string.find(Item.Name:lower(), text, 1, true) ~= nil
-					end
-				end
-			end)
-
-
-			local function Clear()
-				for _, option in ipairs(Dropdown.List:GetChildren()) do
-					if option.ClassName == "TextLabel" and option.Name ~= "Template" then
-						option:Destroy()
-					end
-				end
+	local function ActivateColorSingle(name)
+		for _, Option in pairs(Dropdown.List:GetChildren()) do
+			if Option.ClassName == "TextLabel" and Option.Name ~= "Template" then
+				tween(Option, {BackgroundTransparency = 0.98, TextColor3 = Color3.fromRGB(200,200,200)})
 			end
+		end
 
-			local function ActivateColorSingle(name)
-				for _, Option in pairs(Dropdown.List:GetChildren()) do
-					if Option.ClassName == "TextLabel" and Option.Name ~= "Template" then
-						tween(Option, {BackgroundTransparency = 0.98})
-					end
-				end
+		if Dropdown.List:FindFirstChild(name) then
+			tween(Dropdown.List[name], {BackgroundTransparency = 0.95, TextColor3 = Color3.fromRGB(240,240,240)})
+		end
+		Toggle()
+	end
 
-				Toggle()
-				tween(Dropdown.List[name], {BackgroundTransparency = 0.95, TextColor3 = Color3.fromRGB(240,240,240)})
-			end
-
-			local function Refresh()
-				Clear()
-				for i,v in pairs(DropdownSettings.Options) do
-					local Option = Dropdown.List.Template:Clone()
-					local optionhover = false
-					Option.Text = v
-					if v == "Template" then v = "Template (Name)" end
-					Option.Name = v
-					Option.Interact.MouseButton1Click:Connect(function()
-						local bleh
-						if DropdownSettings.MultipleOptions then
-							if table.find(DropdownSettings.CurrentOption, v) then
-								RemoveTable(DropdownSettings.CurrentOption, v)
-								DropdownV.CurrentOption = DropdownSettings.CurrentOption
-								if not optionhover then
-									tween(Option, {TextColor3 = Color3.fromRGB(200,200,200)})
-								end
-								tween(Option, {BackgroundTransparency = 0.98})
-							else
-								table.insert(DropdownSettings.CurrentOption, v)
-								DropdownV.CurrentOption = DropdownSettings.CurrentOption
-								tween(Option, {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
-							end
-							bleh = DropdownSettings.CurrentOption
-						else
-							DropdownSettings.CurrentOption = {v}
-							bleh = v
-							DropdownV.CurrentOption = bleh
-							ActivateColorSingle(v)
-						end
-
-						SafeCallback(bleh, function()
-							if DropdownSettings.MultipleOptions then
-								if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
-									if #DropdownSettings.CurrentOption == 1 then
-										Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
-									elseif #DropdownSettings.CurrentOption == 0 then
-										Dropdown.Selected.PlaceholderText = "None"
-									else
-										Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
-									end
-								else
-									DropdownSettings.CurrentOption = {}
-									Dropdown.Selected.PlaceholderText = "None"
-								end
-							end
-							if not DropdownSettings.MultipleOptions then
-								Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
-							end
-							Dropdown.Selected.Text = ""
-						end)
-					end)
-					Option.Visible = true
-					Option.Parent = Dropdown.List
-					Option.MouseEnter:Connect(function()
-						optionhover = true
-						if Option.BackgroundTransparency == 0.95 then
-							return
-						else
-							tween(Option, {TextColor3 = Color3.fromRGB(240,240,240)})
-						end
-					end)
-					Option.MouseLeave:Connect(function()
-						optionhover = false
-						if Option.BackgroundTransparency == 0.95 then
-							return
-						else
+	local function Refresh()
+		Clear()
+		for i,v in pairs(DropdownSettings.Options) do
+			local Option = Dropdown.List.Template:Clone()
+			local optionhover = false
+			Option.Text = v
+			local optionName = v
+			if v == "Template" then optionName = "Template (Name)" end
+			Option.Name = optionName
+			Option.Interact.MouseButton1Click:Connect(function()
+				local bleh
+				if DropdownSettings.MultipleOptions then
+					if table.find(DropdownSettings.CurrentOption, v) then
+						RemoveTable(DropdownSettings.CurrentOption, v)
+						DropdownV.CurrentOption = DropdownSettings.CurrentOption
+						if not optionhover then
 							tween(Option, {TextColor3 = Color3.fromRGB(200,200,200)})
 						end
-					end)	
+						tween(Option, {BackgroundTransparency = 0.98})
+					else
+						table.insert(DropdownSettings.CurrentOption, v)
+						DropdownV.CurrentOption = DropdownSettings.CurrentOption
+						tween(Option, {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
+					end
+					bleh = DropdownSettings.CurrentOption
+				else
+					DropdownSettings.CurrentOption = {v}
+					bleh = v
+					DropdownV.CurrentOption = DropdownSettings.CurrentOption
+					ActivateColorSingle(optionName)
 				end
-			end
 
-			local function PlayerTableRefresh()
-				for i,v in pairs(DropdownSettings.Options) do
-					table.remove(DropdownSettings.Options, i)
+				-- Update flags
+				if Flag and Luna.Flags then
+					Luna.Flags[Flag] = DropdownSettings.CurrentOption
 				end
 
-				for i,v in pairs(Players:GetChildren()) do
-					table.insert(DropdownSettings.Options, v.Name)
-				end
-			end
-
-			Dropdown.Interact.MouseButton1Click:Connect(function()
-				Toggle()
+				SafeCallback(bleh, function()
+					if DropdownSettings.MultipleOptions then
+						if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
+							if #DropdownSettings.CurrentOption == 1 then
+								Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
+							elseif #DropdownSettings.CurrentOption == 0 then
+								Dropdown.Selected.PlaceholderText = "None"
+							else
+								Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
+							end
+						else
+							DropdownSettings.CurrentOption = {}
+							Dropdown.Selected.PlaceholderText = "None"
+						end
+					else
+						Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
+					end
+					Dropdown.Selected.Text = ""
+				end)
 			end)
-
-			Dropdown["MouseEnter"]:Connect(function()
-				tween(Dropdown.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
-			end)
-
-			Dropdown["MouseLeave"]:Connect(function()
-				tween(Dropdown.UIStroke, {Color = Color3.fromRGB(64,61,76)})
-			end)
-
-			if DropdownSettings.SpecialType == "Player" then
-
-				for i,v in pairs(DropdownSettings.Options) do
-					table.remove(DropdownSettings.Options, i)
+			Option.Visible = true
+			Option.Parent = Dropdown.List
+			Option.MouseEnter:Connect(function()
+				optionhover = true
+				if Option.BackgroundTransparency == 0.95 then
+					return
+				else
+					tween(Option, {TextColor3 = Color3.fromRGB(240,240,240)})
 				end
-				PlayerTableRefresh()
-				DropdownSettings.CurrentOption = DropdownSettings.Options[1]
+			end)
+			Option.MouseLeave:Connect(function()
+				optionhover = false
+				if Option.BackgroundTransparency == 0.95 then
+					return
+				else
+					tween(Option, {TextColor3 = Color3.fromRGB(200,200,200)})
+				end
+			end)	
+		end
+	end
 
-				Players.PlayerAdded:Connect(function() PlayerTableRefresh() end)
-				Players.PlayerRemoving:Connect(function() PlayerTableRefresh() end)
+	local function PlayerTableRefresh()
+		for i,v in pairs(DropdownSettings.Options) do
+			table.remove(DropdownSettings.Options, i)
+		end
 
+		for i,v in pairs(Players:GetChildren()) do
+			table.insert(DropdownSettings.Options, v.Name)
+		end
+	end
+
+	Dropdown.Interact.MouseButton1Click:Connect(function()
+		Toggle()
+	end)
+
+	Dropdown["MouseEnter"]:Connect(function()
+		tween(Dropdown.UIStroke, {Color = Color3.fromRGB(87, 84, 104)})
+	end)
+
+	Dropdown["MouseLeave"]:Connect(function()
+		tween(Dropdown.UIStroke, {Color = Color3.fromRGB(64,61,76)})
+	end)
+
+	if DropdownSettings.SpecialType == "Player" then
+		for i,v in pairs(DropdownSettings.Options) do
+			table.remove(DropdownSettings.Options, i)
+		end
+		PlayerTableRefresh()
+		if #DropdownSettings.Options > 0 then
+			DropdownSettings.CurrentOption = {DropdownSettings.Options[1]}
+		else
+			DropdownSettings.CurrentOption = {}
+		end
+
+		Players.PlayerAdded:Connect(function() PlayerTableRefresh() end)
+		Players.PlayerRemoving:Connect(function() PlayerTableRefresh() end)
+	end
+
+	Refresh()
+
+	-- Ensure CurrentOption is properly formatted
+	if DropdownSettings.CurrentOption then
+		if type(DropdownSettings.CurrentOption) == "string" then
+			DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption}
+		end
+		if not DropdownSettings.MultipleOptions and type(DropdownSettings.CurrentOption) == "table" then
+			DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption[1]}
+		end
+	else
+		DropdownSettings.CurrentOption = {}
+	end
+
+	DropdownV.CurrentOption = DropdownSettings.CurrentOption
+
+	-- Initialize flags
+	if Flag and Luna.Flags then
+		Luna.Flags[Flag] = DropdownSettings.CurrentOption
+	end
+
+	-- Initial callback and styling
+	local bleh, ind = nil, 0
+	for i,v in pairs(DropdownSettings.CurrentOption) do
+		ind = ind + 1
+	end
+	if ind == 1 then 
+		bleh = DropdownSettings.CurrentOption[1] 
+	else 
+		bleh = DropdownSettings.CurrentOption 
+	end
+	
+	SafeCallback(bleh)
+	
+	-- Apply initial styling
+	if type(bleh) == "string" then 
+		if Dropdown.List:FindFirstChild(bleh) then
+			tween(Dropdown.List[bleh], {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
+		end
+	else
+		for i,v in pairs(bleh) do
+			if Dropdown.List:FindFirstChild(v) then
+				tween(Dropdown.List[v], {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
 			end
+		end
+	end
 
-			Refresh()
+	-- Set initial placeholder text
+	if DropdownSettings.MultipleOptions then
+		if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
+			if #DropdownSettings.CurrentOption == 1 then
+				Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
+			elseif #DropdownSettings.CurrentOption == 0 then
+				Dropdown.Selected.PlaceholderText = "None"
+			else
+				Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
+			end
+		else
+			DropdownSettings.CurrentOption = {}
+			Dropdown.Selected.PlaceholderText = "None"
+		end
+	else
+		Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
+	end
+	Dropdown.Selected.Text = ""
 
-			if DropdownSettings.CurrentOption then
-				if type(DropdownSettings.CurrentOption) == "string" then
-					DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption}
-				end
-				if not DropdownSettings.MultipleOptions and type(DropdownSettings.CurrentOption) == "table" then
-					DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption[1]}
-				end
+	function DropdownV:Set(NewDropdownSettings)
+		NewDropdownSettings = Kwargify(DropdownSettings, NewDropdownSettings or {})
+
+		DropdownV.Settings = NewDropdownSettings
+		DropdownSettings = NewDropdownSettings
+
+		Dropdown.Name = DropdownSettings.Name
+		Dropdown.Title.Text = DropdownSettings.Name
+		if DropdownSettings.Description ~= nil and DropdownSettings.Description ~= "" and Dropdown.Desc ~= nil then
+			Dropdown.Desc.Text = DropdownSettings.Description
+		end
+
+		if DropdownSettings.SpecialType == "Player" then
+			for i,v in pairs(DropdownSettings.Options) do
+				table.remove(DropdownSettings.Options, i)
+			end
+			PlayerTableRefresh()
+			if #DropdownSettings.Options > 0 then
+				DropdownSettings.CurrentOption = {DropdownSettings.Options[1]}
 			else
 				DropdownSettings.CurrentOption = {}
 			end
+			Players.PlayerAdded:Connect(function() PlayerTableRefresh() end)
+			Players.PlayerRemoving:Connect(function() PlayerTableRefresh() end)
+		end
 
-			local bleh, ind = nil,0
-			for i,v in pairs(DropdownSettings.CurrentOption) do
-				ind = ind + 1
+		Refresh()
+
+		-- Ensure CurrentOption is properly formatted
+		if DropdownSettings.CurrentOption then
+			if type(DropdownSettings.CurrentOption) == "string" then
+				DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption}
 			end
-			if ind == 1 then bleh = DropdownSettings.CurrentOption[1] else bleh = DropdownSettings.CurrentOption end
-			SafeCallback(bleh)
-			if type(bleh) == "string" then 
+			if not DropdownSettings.MultipleOptions and type(DropdownSettings.CurrentOption) == "table" then
+				DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption[1]}
+			end
+		else
+			DropdownSettings.CurrentOption = {}
+		end
+
+		-- Update DropdownV.CurrentOption
+		DropdownV.CurrentOption = DropdownSettings.CurrentOption
+
+		-- Update flags
+		if Flag and Luna.Flags then
+			Luna.Flags[Flag] = DropdownSettings.CurrentOption
+		end
+
+		local bleh, ind = nil, 0
+		for i,v in pairs(DropdownSettings.CurrentOption) do
+			ind = ind + 1
+		end
+		if ind == 1 then 
+			bleh = DropdownSettings.CurrentOption[1] 
+		else 
+			bleh = DropdownSettings.CurrentOption 
+		end
+		
+		SafeCallback(bleh)
+		
+		-- Reset all options to default color first
+		for _, Option in pairs(Dropdown.List:GetChildren()) do
+			if Option.ClassName == "TextLabel" and Option.Name ~= "Template" then
+				tween(Option, {TextColor3 = Color3.fromRGB(200,200,200), BackgroundTransparency = 0.98})
+			end
+		end
+		
+		-- Apply selection styling - Handle both single and multiple options
+		if type(bleh) == "string" then
+			-- Single option
+			if Dropdown.List:FindFirstChild(bleh) then
 				tween(Dropdown.List[bleh], {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
-			else
-				for i,v in pairs(bleh) do
+			end
+		else
+			-- Multiple options
+			for i,v in pairs(bleh) do
+				if Dropdown.List:FindFirstChild(v) then
 					tween(Dropdown.List[v], {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
 				end
 			end
+		end
 
-			if DropdownSettings.MultipleOptions then
-				if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
-					if #DropdownSettings.CurrentOption == 1 then
-						Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
-					elseif #DropdownSettings.CurrentOption == 0 then
-						Dropdown.Selected.PlaceholderText = "None"
-					else
-						Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
-					end
-				else
-					DropdownSettings.CurrentOption = {}
+		-- Update placeholder text
+		if DropdownSettings.MultipleOptions then
+			if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
+				if #DropdownSettings.CurrentOption == 1 then
+					Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
+				elseif #DropdownSettings.CurrentOption == 0 then
 					Dropdown.Selected.PlaceholderText = "None"
-				end
-				for _, name in pairs(DropdownSettings.CurrentOption) do
-					tween(Dropdown.List[name], {TextColor3 = Color3.fromRGB(227,227,227), BackgroundTransparency = 0.95})
+				else
+					Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
 				end
 			else
-				Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
+				DropdownSettings.CurrentOption = {}
+				Dropdown.Selected.PlaceholderText = "None"
 			end
-			Dropdown.Selected.Text = ""
-
-			function DropdownV:Set(NewDropdownSettings)
-				NewDropdownSettings = Kwargify(DropdownSettings, NewDropdownSettings or {})
-
-				DropdownV.Settings = NewDropdownSettings
-				DropdownSettings = NewDropdownSettings
-
-				Dropdown.Name = DropdownSettings.Name
-				Dropdown.Title.Text = DropdownSettings.Name
-				if DropdownSettings.Description ~= nil and DropdownSettings.Description ~= "" and Dropdown.Desc ~= nil then
-					Dropdown.Desc.Text = DropdownSettings.Description
-				end
-
-				if DropdownSettings.SpecialType == "Player" then
-
-					for i,v in pairs(DropdownSettings.Options) do
-						table.remove(DropdownSettings.Options, i)
-					end
-					PlayerTableRefresh()
-					DropdownSettings.CurrentOption = DropdownSettings.Options[1]                    
-					Players.PlayerAdded:Connect(function() PlayerTableRefresh() end)
-					Players.PlayerRemoving:Connect(function() PlayerTableRefresh() end)
-
-				end
-
-				Refresh()
-
-				if DropdownSettings.CurrentOption then
-					if type(DropdownSettings.CurrentOption) == "string" then
-						DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption}
-					end
-					if not DropdownSettings.MultipleOptions and type(DropdownSettings.CurrentOption) == "table" then
-						DropdownSettings.CurrentOption = {DropdownSettings.CurrentOption[1]}
-					end
-				else
-					DropdownSettings.CurrentOption = {}
-				end
-
-				local bleh, ind = nil,0
-				for i,v in pairs(DropdownSettings.CurrentOption) do
-					ind = ind + 1
-				end
-				if ind == 1 then bleh = DropdownSettings.CurrentOption[1] else bleh = DropdownSettings.CurrentOption end
-				SafeCallback(bleh)
-				for _, Option in pairs(Dropdown.List:GetChildren()) do
-					if Option.ClassName == "TextLabel" then
-						tween(Option, {TextColor3 = Color3.fromRGB(200,200,200), BackgroundTransparency = 0.98})
-					end
-				end
-				tween(Dropdown.List[bleh], {TextColor3 = Color3.fromRGB(240,240,240), BackgroundTransparency = 0.95})
-
-				if DropdownSettings.MultipleOptions then
-					if DropdownSettings.CurrentOption and type(DropdownSettings.CurrentOption) == "table" then
-						if #DropdownSettings.CurrentOption == 1 then
-							Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1]
-						elseif #DropdownSettings.CurrentOption == 0 then
-							Dropdown.Selected.PlaceholderText = "None"
-						else
-							Dropdown.Selected.PlaceholderText = unpackt(DropdownSettings.CurrentOption)
-						end
-					else
-						DropdownSettings.CurrentOption = {}
-						Dropdown.Selected.PlaceholderText = "None"
-					end
-					for _, name in pairs(DropdownSettings.CurrentOption) do
-						tween(Dropdown.List[name], {TextColor3 = Color3.fromRGB(227,227,227), BackgroundTransparency = 0.95})
-					end
-				else
-					Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
-				end
-				Dropdown.Selected.Text = ""
-
-				-- Luna.Flags[DropdownSettings.Flag] = DropdownSettings
-
-			end
-
-			function DropdownV:Destroy()
-				Dropdown.Visible = false
-				Dropdown:Destroy()
-			end
-
-			if Flag then
-				Luna.Options[Flag] = DropdownV
-			end
-
-			-- Luna.Flags[DropdownSettings.Flag] = DropdownSettings
-
-			return DropdownV
-
+		else
+			Dropdown.Selected.PlaceholderText = DropdownSettings.CurrentOption[1] or "None"
 		end
+		Dropdown.Selected.Text = ""
+	end
+
+	function DropdownV:Destroy()
+		Dropdown.Visible = false
+		Dropdown:Destroy()
+	end
+
+	-- Register dropdown with options system
+	if Flag then
+		Luna.Options[Flag] = DropdownV
+	end
+
+	return DropdownV
+end
 
 		-- Color Picker
 		function Tab:CreateColorPicker(ColorPickerSettings, Flag) -- by Rayfield/Throit
@@ -6525,110 +6576,58 @@ end
 
 		SetFolder()
 
-		-- Modified SaveConfig function
-function Luna:SaveConfig(Path)
-	if isStudio then return "Config system unavailable." end
+		function Luna:SaveConfig(Path)
+			if isStudio then return "Config system unavailable." end
 
-	if (not Path) then
-		return false, "Please select a config file."
-	end
+			if (not Path) then
+				return false, "Please select a config file."
+			end
 
-	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
+			local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
 
-	local data = {
-		objects = {},
-		customData = {} -- Add custom data section
-	}
-
-	-- Save regular UI elements
-	for flag, option in next, Luna.Options do
-		if not ClassParser[option.Class] then continue end
-		if option.IgnoreConfig then continue end
-
-		table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
-	end	
-
-	-- Save custom data like saved position
-	if savedPosition then
-		local pos = savedPosition.Position
-		data.customData.savedFishingPosition = {
-			X = pos.X,
-			Y = pos.Y,
-			Z = pos.Z,
-			-- Also save rotation if needed
-			LookVector = {
-				X = savedPosition.LookVector.X,
-				Y = savedPosition.LookVector.Y,
-				Z = savedPosition.LookVector.Z
+			local data = {
+				objects = {}
 			}
-		}
-	end
 
-	local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
-	if not success then
-		return false, "Unable to encode into JSON data"
-	end
+			for flag, option in next, Luna.Options do
+				if not ClassParser[option.Class] then continue end
+				if option.IgnoreConfig then continue end
 
-	writefile(fullPath, encoded)
-	return true
-end
+				table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
+			end	
 
--- Modified LoadConfig function (you'll need to add this too)
-function Luna:LoadConfig(Path)
-	if isStudio then return "Config system unavailable." end
+			local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+			if not success then
+				return false, "Unable to encode into JSON data"
+			end
 
-	if (not Path) then
-		return false, "Please select a config file."
-	end
-
-	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
-
-	if not isfile(fullPath) then
-		return false, "Config file does not exist."
-	end
-
-	local success, data = pcall(function()
-		return HttpService:JSONDecode(readfile(fullPath))
-	end)
-
-	if not success then
-		return false, "Unable to decode JSON data"
-	end
-
-	-- Load regular UI elements
-	for _, obj in next, data.objects do
-		if Luna.Options[obj.flag] and ClassParser[Luna.Options[obj.flag].Class] then
-			task.spawn(function()
-				ClassParser[Luna.Options[obj.flag].Class].Load(obj.flag, obj)
-			end)
+			writefile(fullPath, encoded)
+			return true
 		end
-	end
 
-	-- Load custom data like saved position
-	if data.customData and data.customData.savedFishingPosition then
-		local posData = data.customData.savedFishingPosition
-		local lookVec = posData.LookVector or {X = 0, Y = 0, Z = 1}
-		
-		-- Reconstruct CFrame
-		savedPosition = CFrame.lookAt(
-			Vector3.new(posData.X, posData.Y, posData.Z),
-			Vector3.new(posData.X + lookVec.X, posData.Y + lookVec.Y, posData.Z + lookVec.Z)
-		)
-		
-		-- Update the label if it exists
-		if Label1 then
-			local roundedX = math.floor(posData.X + 0.5)
-			local roundedY = math.floor(posData.Y + 0.5) 
-			local roundedZ = math.floor(posData.Z + 0.5)
-			local posString = roundedX .. ", " .. roundedY .. ", " .. roundedZ
-			Label1:Set(posString)
+		function Luna:LoadConfig(Path)
+			if isStudio then return "Config system unavailable." end
+
+			if (not Path) then
+				return false, "Please select a config file."
+			end
+
+			local file = Luna.Folder .. "/settings/" .. Path .. ".luna"
+			if not isfile(file) then return false, "Invalid file" end
+
+			local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
+			if not success then return false, "Unable to decode JSON data." end
+
+			for _, option in next, decoded.objects do
+				if ClassParser[option.type] then
+					task.spawn(function() 
+						ClassParser[option.type].Load(option.flag, option) 
+					end)
+				end
+			end
+
+			return true
 		end
-		
-		print("Loaded fishing position: " .. math.floor(posData.X + 0.5) .. ", " .. math.floor(posData.Y + 0.5) .. ", " .. math.floor(posData.Z + 0.5))
-	end
-
-	return true
-end
 
 		function Luna:LoadAutoloadConfig()
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
