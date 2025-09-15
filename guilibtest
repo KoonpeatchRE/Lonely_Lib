@@ -6238,9 +6238,7 @@ end
 		Dropdown.Visible = false
 		Dropdown:Destroy()
 	end
-
-			return DropdownV
-	-- Register dropdown with options system
+    
 	if Flag then
 		Luna.Options[Flag] = DropdownV
 	end
