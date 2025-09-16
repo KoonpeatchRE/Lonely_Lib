@@ -6400,6 +6400,7 @@ function Luna:GetAutoloadConfig()
     return nil
 end
 
+-- Initialize autoload label
 if isfile(Luna.Folder .. "/settings/autoload.txt") then
     local name = readfile(Luna.Folder .. "/settings/autoload.txt")
     if name and name ~= "" then
@@ -6681,6 +6682,7 @@ end
 
 		return true
 	end
+
 		function Luna:LoadAutoloadConfig()
     if isfile(Luna.Folder .. "/settings/autoload.txt") then
         if isStudio then 
@@ -6710,15 +6712,25 @@ end
     end 
 end
 
-spawn(function()
-    wait(10) -- Wait even longer
-    if isfile(Luna.Folder .. "/settings/autoload.txt") then
+if isfile(Luna.Folder .. "/settings/autoload.txt") then
+    spawn(function()
+        wait(2) -- Wait longer for everything to fully load
+        print("Attempting to autoload config...")
+        
         local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        print("Autoload config name:", name)
+        
         if name and name ~= "" then
-            Luna:LoadConfig(name)
+            if isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
+                print("Config file exists, loading...")
+                local success, err = Luna:LoadConfig(name)
+                print("Load result:", success, err)
+            else
+                print("Config file doesn't exist:", Luna.Folder .. "/configs/" .. name .. ".json")
+            end
         end
-    end
-end)
+    end)
+end
 
 		function Luna:RefreshConfigList()
 			if isStudio then return "Config system unavailable." end
