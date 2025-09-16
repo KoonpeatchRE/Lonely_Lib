@@ -6684,22 +6684,26 @@ end
 	end
 
 		function Luna:LoadAutoloadConfig()
-    if isfile(Luna.Folder .. "/settings/autoload.txt") then
+    -- Use "autoload" not "autoload.txt" (based on your file explorer)
+    if isfile(Luna.Folder .. "/settings/autoload") then
         if isStudio then 
             return 
         end
 
-        local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        local name = readfile(Luna.Folder .. "/settings/autoload")
 
         -- Validate the autoload file content
         if not name or name == "" then
             return
         end
 
-        -- Check if the autoload config still exists
+        -- Clean whitespace/newlines
+        name = name:gsub("^%s*(.-)%s*$", "%1")
+
+        -- Check if the autoload config still exists (.json extension)
         if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
             -- Clear the invalid autoload
-            delfile(Luna.Folder .. "/settings/autoload.txt")
+            delfile(Luna.Folder .. "/settings/autoload")
             return
         end
 
@@ -6712,21 +6716,31 @@ end
     end 
 end
 
-if isfile(Luna.Folder .. "/settings/autoload.txt") then
+-- Updated spawn function
+if isfile(Luna.Folder .. "/settings/autoload") then
     spawn(function()
         wait(2) -- Wait longer for everything to fully load
         print("Attempting to autoload config...")
 
-        local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        local name = readfile(Luna.Folder .. "/settings/autoload")
+        -- Clean the name
+        name = name:gsub("^%s*(.-)%s*$", "%1")
         print("Autoload config name:", name)
 
         if name and name ~= "" then
+            -- Check for .json file
             if isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
                 print("Config file exists, loading...")
                 local success, err = Luna:LoadConfig(name)
                 print("Load result:", success, err)
             else
                 print("Config file doesn't exist:", Luna.Folder .. "/configs/" .. name .. ".json")
+                -- Debug: show what files actually exist
+                print("Available config files:")
+                local files = listfiles(Luna.Folder .. "/configs/")
+                for i, file in ipairs(files) do
+                    print("  " .. file)
+                end
             end
         end
     end)
