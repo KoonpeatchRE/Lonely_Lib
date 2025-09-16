@@ -6685,50 +6685,36 @@ end
 		function Luna:LoadAutoloadConfig()
     if isfile(Luna.Folder .. "/settings/autoload.txt") then
         if isStudio then 
-            return "Config system unavailable." 
+            return 
         end
 
         local name = readfile(Luna.Folder .. "/settings/autoload.txt")
         
         -- Validate the autoload file content
         if not name or name == "" then
-            return Luna:Notification({
-                Title = "Interface",
-                Icon = "warning", 
-                ImageSource = "Material",
-                Content = "Autoload config name is empty",
-            })
+            return
         end
         
         -- Check if the autoload config still exists
         if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
             -- Clear the invalid autoload
             delfile(Luna.Folder .. "/settings/autoload.txt")
-            return Luna:Notification({
-                Title = "Interface",
-                Icon = "warning",
-                ImageSource = "Material", 
-                Content = string.format("Autoload config %q no longer exists. Cleared autoload setting.", name),
-            })
+            loadlabel:Set({ Text = "Current autoload config: None" })
+            return
         end
 
         local success, err = Luna:LoadConfig(name)
         if not success then
-            return Luna:Notification({
-                Title = "Interface",
-                Icon = "warning",
-                ImageSource = "Material",
-                Content = "Failed to load autoload config: " .. err,
-            })
+            return
         end
 
-        Luna:Notification({
-            Title = "Interface", 
-            Icon = "sparkle",
-            ImageSource = "Material",
-            Content = string.format("Auto loaded config %q", name),
-        })
+        -- Config loaded successfully - no notification needed
     end 
+end
+
+if isfile(Luna.Folder .. "/settings/autoload.txt") then
+    wait(1) -- Wait a moment for everything to load
+    Luna:LoadAutoloadConfig()
 end
 
 		function Luna:RefreshConfigList()
