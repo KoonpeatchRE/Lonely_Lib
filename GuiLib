@@ -6611,6 +6611,18 @@ end
 	return true
 end
 
+local function updatePositionLabel()
+    if Label1 then
+        local displayText
+        if type(_G.PositionValue) == "table" then
+            displayText = _G.PositionValue[1] or "Not Set"
+        else
+            displayText = _G.PositionValue or "Not Set"
+        end
+        Label1:Set("Position: " .. displayText)
+    end
+end
+
 		function Luna:LoadConfig(Path)
 	if isStudio then return "Config system unavailable." end
 
