@@ -6717,34 +6717,55 @@ end
 end
 
 -- Updated spawn function
+-- Simple autoload that actually works
+print("Autoload script starting...")
+
+wait(3) -- Give everything time to load
+
+print("Checking for autoload file...")
+
 if isfile(Luna.Folder .. "/settings/autoload") then
-    spawn(function()
-        wait(2) -- Wait longer for everything to fully load
-        print("Attempting to autoload config...")
-
-        local name = readfile(Luna.Folder .. "/settings/autoload")
-        -- Clean the name
-        name = name:gsub("^%s*(.-)%s*$", "%1")
-        print("Autoload config name:", name)
-
-        if name and name ~= "" then
-            -- Check for .json file
-            if isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
-                print("Config file exists, loading...")
-                local success, err = Luna:LoadConfig(name)
-                print("Load result:", success, err)
+    print("Autoload file found!")
+    
+    local configName = readfile(Luna.Folder .. "/settings/autoload")
+    configName = configName:gsub("%s+", "") -- remove all whitespace
+    
+    print("Config name from autoload:", configName)
+    
+    local configPath = Luna.Folder .. "/configs/" .. configName .. ".json"
+    print("Looking for config at:", configPath)
+    
+    if isfile(configPath) then
+        print("Config file found! Loading...")
+        
+        -- Try to load the config
+        if Luna and Luna.LoadConfig then
+            local success, err = pcall(function()
+                return Luna:LoadConfig(configName)
+            end)
+            
+            if success then
+                print("✅ Autoload successful!")
             else
-                print("Config file doesn't exist:", Luna.Folder .. "/configs/" .. name .. ".json")
-                -- Debug: show what files actually exist
-                print("Available config files:")
-                local files = listfiles(Luna.Folder .. "/configs/")
-                for i, file in ipairs(files) do
-                    print("  " .. file)
-                end
+                print("❌ Failed to load config:", err)
             end
+        else
+            print("❌ Luna:LoadConfig function not found")
         end
-    end)
+    else
+        print("❌ Config file not found at:", configPath)
+        
+        -- Show what files exist
+        print("Files in configs folder:")
+        for _, file in pairs(listfiles(Luna.Folder .. "/configs/")) do
+            print("  " .. file)
+        end
+    end
+else
+    print("❌ No autoload file found at:", Luna.Folder .. "/settings/autoload")
 end
+
+print("Autoload script complete.")
 
 		function Luna:RefreshConfigList()
 			if isStudio then return "Config system unavailable." end
