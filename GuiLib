@@ -6349,35 +6349,14 @@ end
     Callback = function()
         local name = selectedConfig
         
-        -- Validate selectedConfig exists
+        -- Simple validation
         if not name or name == "" then
-            return Luna:Notification({
-                Title = "Interface",
-                Icon = "warning",
-                -- Remove ImageSource that's causing the error
-                Content = "No config selected to set as autoload",
-            })
+            return
         end
         
-        -- Check if config file actually exists before setting as autoload
-        if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
-            return Luna:Notification({
-                Title = "Interface", 
-                Icon = "warning",
-                -- Remove ImageSource that's causing the error
-                Content = "Selected config file doesn't exist",
-            })
-        end
-        
+        -- Write the autoload file
         writefile(Luna.Folder .. "/settings/autoload.txt", name)
         loadlabel:Set({ Text = "Current autoload config: " .. name })
-
-        Luna:Notification({
-            Title = "Interface",
-            Icon = "info",
-            -- Remove ImageSource that's causing the error
-            Content = string.format("Set %q to auto load", name),
-        })
     end,
 })
 
