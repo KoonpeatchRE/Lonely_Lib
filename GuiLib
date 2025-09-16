@@ -6387,31 +6387,41 @@ end
 			})
 
 			Tab:CreateButton({
-    Name = "Delete Autoload", 
-    Description = "Delete The Autoload File",
+    Name = "Clear autoload", 
+    Description = "Remove the current autoload config setting.",
     Callback = function()
         if isfile(Luna.Folder .. "/settings/autoload.txt") then
             delfile(Luna.Folder .. "/settings/autoload.txt")
             loadlabel:Set({ Text = "Current autoload config: None" })
-
+            
             Luna:Notification({
                 Title = "Interface",
                 Icon = "info", 
                 ImageSource = "Material",
-                Content = "Deleted Autoload",
+                Content = "Cleared autoload config setting",
             })
         else
             Luna:Notification({
                 Title = "Interface",
                 Icon = "info",
                 ImageSource = "Material", 
-                Content = "No autoload file to delete",
+                Content = "No autoload config is currently set",
             })
         end
     end,
 })
 
-			if isfile(Luna.Folder .. "/settings/autoload.txt") then
+function Luna:GetAutoloadConfig()
+    if isfile(Luna.Folder .. "/settings/autoload.txt") then
+        local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        if name and name ~= "" then
+            return name
+        end
+    end
+    return nil
+end
+
+if isfile(Luna.Folder .. "/settings/autoload.txt") then
     local name = readfile(Luna.Folder .. "/settings/autoload.txt")
     if name and name ~= "" then
         loadlabel:Set({ Text = "Current autoload config: " .. name })
@@ -6421,6 +6431,12 @@ end
 else
     loadlabel:Set({ Text = "Current autoload config: None" })
 end
+
+			if isfile(Luna.Folder .. "/settings/autoload.txt") then
+				local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+				loadlabel:Set( { Text = "Current autoload config: " .. name })
+			end     
+		end
 
 		local ClassParser = {
 			["Toggle"] = {
