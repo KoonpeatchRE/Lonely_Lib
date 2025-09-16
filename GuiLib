@@ -6632,10 +6632,9 @@ end
 		end
 	end
 
-	-- Load _G.PositionValue and update savedPosition
+	-- Load position data
 	if decoded.customData and decoded.customData.PositionValue then
 		_G.PositionValue = decoded.customData.PositionValue
-		savedPosition = getPositionAsCFrame()
 	end
 
 	return true
