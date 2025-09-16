@@ -6612,28 +6612,60 @@ end
 end
 
 		function Luna:LoadConfig(Path)
-			if isStudio then return "Config system unavailable." end
+	if isStudio then return "Config system unavailable." end
 
-			if (not Path) then
-				return false, "Please select a config file."
+	if (not Path) then
+		return false, "Please select a config file."
+	end
+
+	local file = Luna.Folder .. "/settings/" .. Path .. ".luna"
+	if not isfile(file) then return false, "Invalid file" end
+
+	local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
+	if not success then return false, "Unable to decode JSON data." end
+
+	for _, option in next, decoded.objects do
+		if ClassParser[option.type] then
+			task.spawn(function() 
+				ClassParser[option.type].Load(option.flag, option) 
+			end)
+		end
+	end
+
+	-- Load _G.PositionValue from customData and update savedPosition
+	if decoded.customData and decoded.customData.PositionValue then
+		_G.PositionValue = decoded.customData.PositionValue
+		savedPosition = getPositionAsCFrame() -- Update current savedPosition
+		
+		-- Update label if it exists
+		if Label1 then
+			local displayText
+			if type(_G.PositionValue) == "table" then
+				displayText = _G.PositionValue[1] or "Not Set"
+			else
+				displayText = _G.PositionValue or "Not Set"
 			end
-
-			local file = Luna.Folder .. "/settings/" .. Path .. ".luna"
-			if not isfile(file) then return false, "Invalid file" end
-
-			local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
-			if not success then return false, "Unable to decode JSON data." end
-
-			for _, option in next, decoded.objects do
-				if ClassParser[option.type] then
-					task.spawn(function() 
-						ClassParser[option.type].Load(option.flag, option) 
-					end)
+			
+			-- Extract position for display
+			if type(displayText) == "string" then
+				local coords = {}
+				for coord in displayText:gmatch("[^,]+") do
+					table.insert(coords, tonumber(coord:match("^%s*(.-)%s*$")))
+				end
+				if #coords >= 3 then
+					local posDisplay = coords[1] .. ", " .. coords[2] .. ", " .. coords[3]
+					if #coords >= 6 then
+						Label1:Set("Position: " .. posDisplay .. " (with rotation)")
+					else
+						Label1:Set("Position: " .. posDisplay)
+					end
 				end
 			end
-
-			return true
 		end
+	end
+
+	return true
+end
 
 		function Luna:LoadAutoloadConfig()
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
