@@ -6681,7 +6681,6 @@ end
 
 		return true
 	end
-
 		function Luna:LoadAutoloadConfig()
     if isfile(Luna.Folder .. "/settings/autoload.txt") then
         if isStudio then 
@@ -6699,7 +6698,6 @@ end
         if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
             -- Clear the invalid autoload
             delfile(Luna.Folder .. "/settings/autoload.txt")
-            loadlabel:Set({ Text = "Current autoload config: None" })
             return
         end
 
