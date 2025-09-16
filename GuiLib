@@ -6634,11 +6634,12 @@ end
 
 	-- Load position data
 	if decoded.customData and decoded.customData.PositionValue then
-		_G.PositionValue = decoded.customData.PositionValue
+    _G.PositionValue = decoded.customData.PositionValue
+    updatePositionLabel() -- ADD THIS LINE
 	end
 
-	return true
-end
+		return true
+	end
 
 		function Luna:LoadAutoloadConfig()
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
