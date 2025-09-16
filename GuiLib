@@ -6698,13 +6698,16 @@ end
     Luna:LoadConfig(name)
 end
 
-spawn(function()
-    wait(3)
-    if Luna and Luna.LoadConfig then
-        pcall(function()
-            Luna:LoadAutoloadConfig()
-        end)
-    end
+-- Auto-load when UI finishes loading
+task.spawn(function()
+    -- Wait for UI to fully initialize
+    repeat task.wait() until Luna and Luna.LoadConfig
+    
+    -- Small delay to ensure everything is ready
+    task.wait(1)
+    
+    -- Load the config automatically
+    Luna:LoadAutoloadConfig()
 end)
 
 		function Luna:RefreshConfigList()
