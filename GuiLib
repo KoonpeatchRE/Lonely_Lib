@@ -6697,7 +6697,7 @@ end
         end
         
         -- Check if the autoload config still exists
-        if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
+        if not isfile(Luna.Folder .. "/configs/" .. name .. ".luna") then
             -- Clear the invalid autoload
             delfile(Luna.Folder .. "/settings/autoload.txt")
             return
@@ -6721,7 +6721,7 @@ if isfile(Luna.Folder .. "/settings/autoload.txt") then
         print("Autoload config name:", name)
         
         if name and name ~= "" then
-            if isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
+            if isfile(Luna.Folder .. "/configs/" .. name .. ".luna") then
                 print("Config file exists, loading...")
                 local success, err = Luna:LoadConfig(name)
                 print("Load result:", success, err)
