@@ -6685,6 +6685,7 @@ end
 
 		function Luna:LoadAutoloadConfig()
     if not isfile(Luna.Folder .. "/settings/autoload.txt") then
+        print("No autoload.txt found")
         return
     end
     
@@ -6696,74 +6697,81 @@ end
     name = name:gsub("^%s*(.-)%s*$", "%1") -- trim whitespace
     
     if not name or name == "" then
+        print("Autoload.txt is empty")
         return
     end
 
-    if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
-        delfile(Luna.Folder .. "/settings/autoload.txt")
+    local configPath = Luna.Folder .. "/configs/" .. name .. ".json"
+    if not isfile(configPath) then
+        print("Config file doesn't exist:", configPath)
+        -- DON'T delete the autoload file - just return
         return
     end
 
+    print("Attempting to load config:", name)
     local success, err = Luna:LoadConfig(name)
-    if success then
-        print("Config auto-loaded:", name)
+    if not success then
+        print("LoadConfig returned false. Error:", tostring(err))
+        -- DON'T delete the autoload file - just return
+        return
     end
+
+    print("✅ Config auto-loaded successfully:", name)
 end
 
--- And call it like this:
+-- Better spawn function with error handling
 spawn(function()
     wait(3)
-    if Luna and Luna.LoadAutoloadConfig then
-        Luna:LoadAutoloadConfig()
+    print("Starting autoload process...")
+    
+    if not Luna then
+        print("❌ Luna object not found")
+        return
     end
+    
+    if not Luna.LoadConfig then
+        print("❌ Luna:LoadConfig function not found")
+        return
+    end
+    
+    -- Call the safe autoload function
+    local success, err = pcall(function()
+        Luna:LoadAutoloadConfig()
+    end)
+    
+    if not success then
+        print("❌ Autoload crashed:", tostring(err))
+    end
+    
+    print("Autoload process complete")
 end)
 
-wait(3) -- Wait for Luna to initialize
-
-print("Checking for autoload.txt file...")
-
-if isfile(Luna.Folder .. "/settings/autoload.txt") then
-    print("✅ Found autoload.txt!")
+-- Alternative: Simple direct approach without function
+spawn(function()
+    wait(3)
+    print("🔄 Direct autoload attempt...")
     
-    local configName = readfile(Luna.Folder .. "/settings/autoload.txt")
-    configName = configName:gsub("%s+", "") -- Clean whitespace
-    
-    print("Config name:", configName)
-    
-    local configPath = Luna.Folder .. "/configs/" .. configName .. ".json"
-    print("Looking for:", configPath)
-    
-    if isfile(configPath) then
-        print("✅ Config file found!")
+    if isfile(Luna.Folder .. "/settings/autoload.txt") then
+        local configName = readfile(Luna.Folder .. "/settings/autoload.txt"):gsub("%s+", "")
+        local configPath = Luna.Folder .. "/configs/" .. configName .. ".json"
         
-        if Luna and Luna.LoadConfig then
-            print("Calling Luna:LoadConfig...")
-            local success, err = pcall(function()
-                return Luna:LoadConfig(configName)
-            end)
+        print("Config name:", configName)
+        print("Config path:", configPath)
+        print("Config exists:", isfile(configPath))
+        
+        if isfile(configPath) and Luna and Luna.LoadConfig then
+            print("Calling LoadConfig...")
+            local result = Luna:LoadConfig(configName)
+            print("LoadConfig result:", tostring(result))
             
-            if success then
-                print("🎉 AUTOLOAD SUCCESS!")
+            if result then
+                print("🎉 SUCCESS!")
             else
-                print("❌ LoadConfig failed:", tostring(err))
+                print("⚠️  LoadConfig returned false - but keeping autoload.txt")
             end
-        else
-            print("❌ Luna:LoadConfig not available")
-            print("Luna object:", tostring(Luna))
-        end
-    else
-        print("❌ Config file not found")
-        print("Available configs:")
-        for _, file in pairs(listfiles(Luna.Folder .. "/configs/")) do
-            print("  " .. file)
         end
     end
-else
-    print("❌ autoload.txt not found at:", Luna.Folder .. "/settings/autoload.txt")
-    print("Luna.Folder:", Luna.Folder)
-end
-
-print("Autoload script finished.")
+end)
 
 		function Luna:RefreshConfigList()
 			if isStudio then return "Config system unavailable." end
