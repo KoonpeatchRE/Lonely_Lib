@@ -6627,9 +6627,9 @@ end
 		table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
 	end	
 
-	-- Save _G.PositionValue
-	if _G.PositionValue then
-		data.customData.PositionValue = _G.PositionValue
+	-- Save _G["PositionValue"]
+	if _G["PositionValue"] then
+		data.customData.PositionValue = _G["PositionValue"]
 	end
 
 	local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
@@ -6644,10 +6644,10 @@ end
 local function updatePositionLabel()
     if Label1 then
         local displayText
-        if type(_G.PositionValue) == "table" then
-            displayText = _G.PositionValue[1] or "Not Set"
+        if type(_G["PositionValue"]) == "table" then
+            displayText = _G["PositionValue"][1] or "Not Set"
         else
-            displayText = _G.PositionValue or "Not Set"
+            displayText = _G["PositionValue"] or "Not Set"
         end
         Label1:Set("Position: " .. displayText)
     end
@@ -6676,7 +6676,7 @@ end
 
 	-- Load position data
 	if decoded.customData and decoded.customData.PositionValue then
-    _G.PositionValue = decoded.customData.PositionValue
+    _G["PositionValue"] = decoded.customData.PositionValue
     updatePositionLabel() -- ADD THIS LINE
 	end
 
