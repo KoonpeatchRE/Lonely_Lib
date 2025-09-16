@@ -6577,33 +6577,39 @@ end
 		SetFolder()
 
 		function Luna:SaveConfig(Path)
-			if isStudio then return "Config system unavailable." end
+	if isStudio then return "Config system unavailable." end
 
-			if (not Path) then
-				return false, "Please select a config file."
-			end
+	if (not Path) then
+		return false, "Please select a config file."
+	end
 
-			local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
+	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
 
-			local data = {
-				objects = {}
-			}
+	local data = {
+		objects = {},
+		customData = {}
+	}
 
-			for flag, option in next, Luna.Options do
-				if not ClassParser[option.Class] then continue end
-				if option.IgnoreConfig then continue end
+	for flag, option in next, Luna.Options do
+		if not ClassParser[option.Class] then continue end
+		if option.IgnoreConfig then continue end
 
-				table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
-			end	
+		table.insert(data.objects, ClassParser[option.Class].Save(flag, option))
+	end	
 
-			local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
-			if not success then
-				return false, "Unable to encode into JSON data"
-			end
+	-- Save _G.PositionValue
+	if _G.PositionValue then
+		data.customData.PositionValue = _G.PositionValue
+	end
 
-			writefile(fullPath, encoded)
-			return true
-		end
+	local success, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+	if not success then
+		return false, "Unable to encode into JSON data"
+	end
+
+	writefile(fullPath, encoded)
+	return true
+end
 
 		function Luna:LoadConfig(Path)
 			if isStudio then return "Config system unavailable." end
