@@ -6354,7 +6354,7 @@ end
             return Luna:Notification({
                 Title = "Interface",
                 Icon = "warning",
-                ImageSource = "Material",
+                -- Remove ImageSource that's causing the error
                 Content = "No config selected to set as autoload",
             })
         end
@@ -6364,7 +6364,7 @@ end
             return Luna:Notification({
                 Title = "Interface", 
                 Icon = "warning",
-                ImageSource = "Material",
+                -- Remove ImageSource that's causing the error
                 Content = "Selected config file doesn't exist",
             })
         end
@@ -6375,7 +6375,7 @@ end
         Luna:Notification({
             Title = "Interface",
             Icon = "info",
-            ImageSource = "Material",
+            -- Remove ImageSource that's causing the error
             Content = string.format("Set %q to auto load", name),
         })
     end,
