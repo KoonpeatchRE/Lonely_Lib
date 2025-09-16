@@ -6645,7 +6645,7 @@ local function updatePositionLabel()
     if Label1 then
         local displayText
         if type(getgenv().PositionValue) == "table" then
-            displayText = _getgenv().PositionValue[1] or "Not Set"
+            displayText = getgenv().PositionValue[1] or "Not Set"
         else
             displayText = getgenv().PositionValue or "Not Set"
         end
