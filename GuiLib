@@ -6344,21 +6344,42 @@ end
 
 			local loadlabel
 			Tab:CreateButton({
-				Name = "Set as autoload",
-				Description = "Set a config to auto load setting in your next session.",
-				Callback = function()
-					local name = selectedConfig
-					writefile(Luna.Folder .. "/settings/autoload.txt", name)
-					loadlabel:Set({ Text = "Current autoload config: " .. name })
+    Name = "Set as autoload",
+    Description = "Set a config to auto load setting in your next session.",
+    Callback = function()
+        local name = selectedConfig
+        
+        -- Validate selectedConfig exists
+        if not name or name == "" then
+            return Luna:Notification({
+                Title = "Interface",
+                Icon = "warning",
+                ImageSource = "Material",
+                Content = "No config selected to set as autoload",
+            })
+        end
+        
+        -- Check if config file actually exists before setting as autoload
+        if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
+            return Luna:Notification({
+                Title = "Interface", 
+                Icon = "warning",
+                ImageSource = "Material",
+                Content = "Selected config file doesn't exist",
+            })
+        end
+        
+        writefile(Luna.Folder .. "/settings/autoload.txt", name)
+        loadlabel:Set({ Text = "Current autoload config: " .. name })
 
-					Luna:Notification({
-						Title = "Interface",
-						Icon = "info",
-						ImageSource = "Material",
-						Content = string.format("Set %q to auto load", name),
-					})
-				end,
-			})
+        Luna:Notification({
+            Title = "Interface",
+            Icon = "info",
+            ImageSource = "Material",
+            Content = string.format("Set %q to auto load", name),
+        })
+    end,
+})
 
 			loadlabel = Tab:CreateParagraph({
 				Title = "Current Auto Load",
@@ -6366,27 +6387,40 @@ end
 			})
 
 			Tab:CreateButton({
-				Name = "Delete Autoload",
-				Description = "Delete The Autoload File",
-				Callback = function()
-					local name = selectedConfig
-					delfile(Luna.Folder .. "/settings/autoload.txt")
-					loadlabel:Set({ Text = "None" })
+    Name = "Delete Autoload", 
+    Description = "Delete The Autoload File",
+    Callback = function()
+        if isfile(Luna.Folder .. "/settings/autoload.txt") then
+            delfile(Luna.Folder .. "/settings/autoload.txt")
+            loadlabel:Set({ Text = "Current autoload config: None" })
 
-					Luna:Notification({
-						Title = "Interface",
-						Icon = "info",
-						ImageSource = "Material",
-						Content = "Deleted Autoload",
-					})
-				end,
-			})
+            Luna:Notification({
+                Title = "Interface",
+                Icon = "info", 
+                ImageSource = "Material",
+                Content = "Deleted Autoload",
+            })
+        else
+            Luna:Notification({
+                Title = "Interface",
+                Icon = "info",
+                ImageSource = "Material", 
+                Content = "No autoload file to delete",
+            })
+        end
+    end,
+})
 
 			if isfile(Luna.Folder .. "/settings/autoload.txt") then
-				local name = readfile(Luna.Folder .. "/settings/autoload.txt")
-				loadlabel:Set( { Text = "Current autoload config: " .. name })
-			end     
-		end
+    local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+    if name and name ~= "" then
+        loadlabel:Set({ Text = "Current autoload config: " .. name })
+    else
+        loadlabel:Set({ Text = "Current autoload config: None" })
+    end
+else
+    loadlabel:Set({ Text = "Current autoload config: None" })
+end
 
 		local ClassParser = {
 			["Toggle"] = {
@@ -6654,31 +6688,53 @@ end
 	end
 
 		function Luna:LoadAutoloadConfig()
-			if isfile(Luna.Folder .. "/settings/autoload.txt") then
+    if isfile(Luna.Folder .. "/settings/autoload.txt") then
+        if isStudio then 
+            return "Config system unavailable." 
+        end
 
-				if isStudio then return "Config system unavailable." end
+        local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        
+        -- Validate the autoload file content
+        if not name or name == "" then
+            return Luna:Notification({
+                Title = "Interface",
+                Icon = "warning", 
+                ImageSource = "Material",
+                Content = "Autoload config name is empty",
+            })
+        end
+        
+        -- Check if the autoload config still exists
+        if not isfile(Luna.Folder .. "/configs/" .. name .. ".json") then
+            -- Clear the invalid autoload
+            delfile(Luna.Folder .. "/settings/autoload.txt")
+            return Luna:Notification({
+                Title = "Interface",
+                Icon = "warning",
+                ImageSource = "Material", 
+                Content = string.format("Autoload config %q no longer exists. Cleared autoload setting.", name),
+            })
+        end
 
-				local name = readfile(Luna.Folder .. "/settings/autoload.txt")
+        local success, err = Luna:LoadConfig(name)
+        if not success then
+            return Luna:Notification({
+                Title = "Interface",
+                Icon = "warning",
+                ImageSource = "Material",
+                Content = "Failed to load autoload config: " .. err,
+            })
+        end
 
-				local success, err = Luna:LoadConfig(name)
-				if not success then
-					return Luna:Notification({
-						Title = "Interface",
-						Icon = "sparkle",
-						ImageSource = "Material",
-						Content = "Failed to load autoload config: " .. err,
-					})
-				end
-
-				Luna:Notification({
-					Title = "Interface",
-					Icon = "sparkle",
-					ImageSource = "Material",
-					Content = string.format("Auto loaded config %q", name),
-				})
-
-			end 
-		end
+        Luna:Notification({
+            Title = "Interface", 
+            Icon = "sparkle",
+            ImageSource = "Material",
+            Content = string.format("Auto loaded config %q", name),
+        })
+    end 
+end
 
 		function Luna:RefreshConfigList()
 			if isStudio then return "Config system unavailable." end
