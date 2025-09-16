@@ -2339,9 +2339,9 @@ function Luna:CreateWindow(WindowSettings)
 
 		local direc = WindowSettings.KeySettings.SaveInRoot and "Luna/Configurations/" .. WindowSettings.ConfigSettings.RootFolder .. "/" .. WindowSettings.ConfigSettings.ConfigFolder .. "/Key System/" or "Luna/Configurations/" ..  WindowSettings.ConfigSettings.ConfigFolder .. "/Key System/"
 
-		if isfile and isfile(direc .. WindowSettings.KeySettings.FileName .. ".luna") then
+		if isfile and isfile(direc .. WindowSettings.KeySettings.FileName .. ".json") then
 			for i, Key in ipairs(WindowSettings.KeySettings.Key) do
-				if string.find(readfile(direc .. WindowSettings.KeySettings.FileName .. ".luna"), Key) then
+				if string.find(readfile(direc .. WindowSettings.KeySettings.FileName .. ".json"), Key) then
 					Passthrough = true
 					break
 				end
@@ -2425,7 +2425,7 @@ function Luna:CreateWindow(WindowSettings)
 					KeySystem.Visible = false
 					if WindowSettings.KeySettings.SaveKey then
 						if writefile then
-							writefile(direc .. WindowSettings.KeySettings.FileName .. ".luna", FoundKey)
+							writefile(direc .. WindowSettings.KeySettings.FileName .. ".json", FoundKey)
 						end
 						Luna:Notification({Title = "Key System", Content = "The key for this script has been saved successfully.", Icon = "lock_open"})
 					end
@@ -6613,7 +6613,7 @@ end
 		return false, "Please select a config file."
 	end
 
-	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".luna"
+	local fullPath = Luna.Folder .. "/settings/" .. Path .. ".json"
 
 	local data = {
 		objects = {},
@@ -6660,7 +6660,7 @@ end
 		return false, "Please select a config file."
 	end
 
-	local file = Luna.Folder .. "/settings/" .. Path .. ".luna"
+	local file = Luna.Folder .. "/settings/" .. Path .. ".json"
 	if not isfile(file) then return false, "Invalid file" end
 
 	local success, decoded = pcall(HttpService.JSONDecode, HttpService, readfile(file))
@@ -6707,7 +6707,7 @@ end
     print("Cleaned autoload name: '" .. name .. "'")
     
     -- Check if the autoload config exists
-    local configPath = Luna.Folder .. "/configs/" .. name .. ".luna"
+    local configPath = Luna.Folder .. "/configs/" .. name .. ".json"
     if not isfile(configPath) then
         print("Config file doesn't exist:", configPath)
         print("Available configs:")
@@ -6745,7 +6745,7 @@ if isfile(Luna.Folder .. "/settings/autoload") then
         print("Cleaned name: '" .. name .. "'")
         
         if name and name ~= "" then
-            local configPath = Luna.Folder .. "/configs/" .. name .. ".luna"
+            local configPath = Luna.Folder .. "/configs/" .. name .. ".json"
             print("Looking for config at:", configPath)
             
             if isfile(configPath) then
@@ -6784,8 +6784,8 @@ end
 			local out = {}
 			for i = 1, #list do
 				local file = list[i]
-				if file:sub(-5) == ".luna" then
-					local pos = file:find(".luna", 1, true)
+				if file:sub(-5) == ".json" then
+					local pos = file:find(".json", 1, true)
 					local start = pos
 
 					local char = file:sub(pos, pos)
