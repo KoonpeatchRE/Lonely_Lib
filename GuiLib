@@ -6704,7 +6704,7 @@ task.spawn(function()
     repeat task.wait() until Luna and Luna.LoadConfig
     
     -- Small delay to ensure everything is ready
-    task.wait(1)
+    task.wait(3)
     
     -- Load the config automatically
     Luna:LoadAutoloadConfig()
