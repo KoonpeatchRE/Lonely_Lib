@@ -2012,6 +2012,16 @@ local KeySystem : Frame = Main.KeySystem
 -- end
 
 local function Draggable(Bar, Window, enableTaptic, tapticOffset)
+	if dragBar then
+		dragBar.AnchorPoint = Vector2.new(0.5, 0)
+        RunService.RenderStepped:Connect(function()
+            if dragBar and dragBar.Parent and dragBar.Visible then
+                local mainPos = Main.AbsolutePosition
+                local mainSize = Main.AbsoluteSize
+                dragBar.Position = UDim2.fromOffset(mainPos.X + mainSize.X / 2, mainPos.Y + mainSize.Y + 65)
+            end
+        end)
+	end
 	pcall(function()
 		local Dragging, DragInput, MousePos, FramePos
 
@@ -2209,17 +2219,89 @@ local function Maximise(Window)
 	tween(Window, {Size = MainSize})
 	Window.Elements.Visible = true
 	Window.Navigation.Visible = true
+	ResizeCorner.Visible = true
 end
 
 local function Minimize(Window)
 	Window.Controls.ToggleSize.ImageLabel.Image = "rbxassetid://11036884234"
 	Window.Elements.Visible = false
 	Window.Navigation.Visible = false
+	ResizeCorner.Visible = false
 	tween(Window, {Size = MinSize})
 end
 
 
 function Luna:CreateWindow(WindowSettings)
+	local MainSize
+	local MinSize 
+	if Camera.ViewportSize.X > 774 and Camera.ViewportSize.Y > 503 then
+		MainSize = UDim2.fromOffset(675, 424)
+		MinSize = UDim2.fromOffset(500, 42)
+	else
+		MainSize = UDim2.fromOffset(Camera.ViewportSize.X - 100, Camera.ViewportSize.Y - 100)
+		MinSize = UDim2.fromOffset(Camera.ViewportSize.X - 275, 42)
+	end
+	
+	local MainSizeRef = {Value = Main.Size} 
+	local isMinimized = false
+
+		local function MaximizeWindow(ToggleSizeButton, ResizeCorner, DragBar)
+		ToggleSizeButton.ImageLabel.Image = "rbxassetid://10137941941" -- Restore down icon
+		Main.Elements.Visible = true; Main.Navigation.Visible = true; if ResizeCorner then ResizeCorner.Visible = true end
+		if DragBar then DragBar.Visible = true end
+		TweenService:Create(Main, TweenInfo.new(0.3), {Size = MainSizeRef.Value}):Play()
+		if Main.Parent:FindFirstChild("ShadowHolder") then TweenService:Create(Main.Parent.ShadowHolder, TweenInfo.new(0.3), {Size = MainSizeRef.Value}):Play() end
+		isMinimized = false
+		end
+
+		local function MinimizeWindow(ToggleSizeButton, ResizeCorner, DragBar)
+		ToggleSizeButton.ImageLabel.Image = "rbxassetid://11036884234" -- Maximize icon
+		Main.Elements.Visible = false; Main.Navigation.Visible = false; if ResizeCorner then ResizeCorner.Visible = false end
+		if DragBar then DragBar.Visible = false end
+		TweenService:Create(Main, TweenInfo.new(0.3), {Size = MinSize}):Play()
+		if Main.Parent:FindFirstChild("ShadowHolder") then TweenService:Create(Main.Parent.ShadowHolder, TweenInfo.new(0.3), {Size = MinSize}):Play() end
+		isMinimized = true
+		end
+
+	local function CornerResizable(Handle, Window)
+        local Resizing, FrameSize
+        Handle.InputBegan:Connect(function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+                local ToggleSizeButton = Window.Controls:FindFirstChild("ToggleSize")
+                if isMinimized then
+                    MaximizeWindow(ToggleSizeButton, Handle, Window.Parent:FindFirstChild("Drag"))
+                end
+                Resizing = true
+                FrameSize = Window.AbsoluteSize
+                local MousePos = UserInputService:GetMouseLocation()
+                
+                local moveConnection
+                moveConnection = UserInputService.InputChanged:Connect(function(moveInput)
+                    if not Resizing then moveConnection:Disconnect() return end
+                    if moveInput.UserInputType == Enum.UserInputType.MouseMovement or moveInput.UserInputType == Enum.UserInputType.Touch then
+                        Window.Elements.Visible = true
+                        Window.Navigation.Visible = true
+                        local Delta = UserInputService:GetMouseLocation() - MousePos
+                        local newSize = FrameSize + Delta
+                        local minSizeVec = Vector2.new(500, 150)
+                        local maxSizeVec = Vector2.new(Camera.ViewportSize.X - Window.AbsolutePosition.X - 20, Camera.ViewportSize.Y - Window.AbsolutePosition.Y - 20)
+                        local clampedX = math.clamp(newSize.X, minSizeVec.X, maxSizeVec.X)
+                        local clampedY = math.clamp(newSize.Y, minSizeVec.Y, maxSizeVec.Y)
+                        local newGoal = UDim2.fromOffset(clampedX, clampedY)
+                        TweenService:Create(Window, TweenInfo.new(0.1), {Size = newGoal}):Play()
+                        MainSizeRef.Value = newGoal
+                    end
+                end)
+                
+                Input.Changed:Connect(function()
+                    if Input.UserInputState == Enum.UserInputState.End then
+                        Resizing = false
+                        if moveConnection then moveConnection:Disconnect() end
+                    end
+                end)
+            end
+        end)
+    end
 
 	WindowSettings = Kwargify({
 		Name = "Luna UI Example Window",
@@ -2488,6 +2570,16 @@ function Luna:CreateWindow(WindowSettings)
 	Draggable(Dragger, Main)
 	Draggable(LunaUI.MobileSupport, LunaUI.MobileSupport)
 	if dragBar then Draggable(dragInteract, Main, true, 255) end
+
+	ResizeCorner = Instance.new("ImageButton")
+    ResizeCorner.Name = "ResizeCorner"; ResizeCorner.Parent = Main; ResizeCorner.BackgroundTransparency = 1
+    ResizeCorner.Size = UDim2.fromOffset(20, 20); ResizeCorner.AnchorPoint = Vector2.new(1, 1)
+    ResizeCorner.Position = UDim2.new(1, 0, 1, 0); ResizeCorner.ZIndex = 999 
+    ResizeCorner.Image = ""; ResizeCorner.ImageColor3 = Color3.fromRGB(195, 195, 195)
+    ResizeCorner.Rotation = -45
+    ResizeCorner.MouseEnter:Connect(function() UserInputService.MouseIcon = "rbxasset://SystemCursors/SizeNWSE" end)
+    ResizeCorner.MouseLeave:Connect(function() UserInputService.MouseIcon = "" end)
+    CornerResizable(ResizeCorner, Main)
 
 	Elements.Template.LayoutOrder = 1000000000
 	Elements.Template.Visible = false
