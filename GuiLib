@@ -5552,21 +5552,21 @@ end
 	TweenService:Create(Input.InputFrame.UIStroke, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {Transparency = 0.3}):Play()
 	TweenService:Create(Input.InputFrame.InputBox, TweenInfo.new(0.3, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
 
-	Input.InputFrame.InputBox.PlaceholderText = InputSettings.PlaceholderText
-	
-	-- MOBILE FIX: Hide any extra placeholder labels that appear above the input
-	if Input:FindFirstChild("Placeholder") then
-		Input.Placeholder.Visible = false
+		-- Add this after setting up the InputFrame (around line 77, after the tweens)
+
+	-- Hide any placeholder labels that might be above the input
+	if Input:FindFirstChild("PlaceholderLabel") then
+		Input.PlaceholderLabel.Visible = false
 	end
-	if Input:FindFirstChild("PlaceholderText") then
-		Input.PlaceholderText.Visible = false
-	end
-	-- Hide any TextLabel that's not Title or Desc
+
+	-- Or if there's a label with different name, find and hide it
 	for _, child in pairs(Input:GetChildren()) do
-		if child:IsA("TextLabel") and child.Name ~= "Title" and child.Name ~= "Desc" then
+		if child:IsA("TextLabel") and child ~= Input.Title and child ~= Input.Desc then
 			child.Visible = false
 		end
 	end
+
+	Input.InputFrame.InputBox.PlaceholderText = InputSettings.PlaceholderText
 	
 	-- MOBILE FIX: Make InputBox fill entire InputFrame
 	Input.InputFrame.InputBox.Size = UDim2.new(1, -16, 1, 0)
