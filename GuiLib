@@ -3757,6 +3757,26 @@ function Luna:CreateWindow(WindowSettings)
 								TweenService:Create(Input, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
 								TweenService:Create(Input, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
 								TweenService:Create(Input.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+								-- Add this after creating the Input element (around line 75)
+
+								-- Create a larger tap target for mobile (covers the whole Input element)
+								local TapArea = Instance.new("TextButton")
+								TapArea.Name = "TapArea"
+								TapArea.Size = UDim2.new(1, 0, 1, 0) -- Cover entire Input element
+								TapArea.Position = UDim2.new(0, 0, 0, 0)
+								TapArea.BackgroundTransparency = 1
+								TapArea.Text = ""
+								TapArea.ZIndex = Input.ZIndex -- Behind the InputFrame
+								TapArea.Parent = Input
+
+								-- Connect tap to focus the input
+								TapArea.Activated:Connect(function()
+									Input.InputFrame.InputBox:CaptureFocus()
+								end)
+
+								-- Make sure InputFrame has higher ZIndex so it's clickable
+								Input.InputFrame.ZIndex = Input.ZIndex + 2
+								Input.InputFrame.InputBox.ZIndex = Input.ZIndex + 3
 							end
 						end
 					end
@@ -5554,6 +5574,26 @@ end
 							TweenService:Create(Input, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0.5}):Play()
 							TweenService:Create(Input, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(32, 30, 38)}):Play()
 							TweenService:Create(Input.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+							-- Add this after creating the Input element (around line 75)
+
+							-- Create a larger tap target for mobile (covers the whole Input element)
+							local TapArea = Instance.new("TextButton")
+							TapArea.Name = "TapArea"
+							TapArea.Size = UDim2.new(1, 0, 1, 0) -- Cover entire Input element
+							TapArea.Position = UDim2.new(0, 0, 0, 0)
+							TapArea.BackgroundTransparency = 1
+							TapArea.Text = ""
+							TapArea.ZIndex = Input.ZIndex -- Behind the InputFrame
+							TapArea.Parent = Input
+
+							-- Connect tap to focus the input
+							TapArea.Activated:Connect(function()
+								Input.InputFrame.InputBox:CaptureFocus()
+							end)
+
+							-- Make sure InputFrame has higher ZIndex so it's clickable
+							Input.InputFrame.ZIndex = Input.ZIndex + 2
+							Input.InputFrame.InputBox.ZIndex = Input.ZIndex + 3
 						end
 					end
 				end
@@ -5579,6 +5619,9 @@ end
 						Input.InputFrame.InputBox.Text = Input.InputFrame.InputBox.Text:sub(1, InputSettings.MaxCharacters)
 					end
 				end
+				-- Ensure minimum width for easy tapping
+				local newWidth = math.max(Input.InputFrame.InputBox.TextBounds.X + 52, 150)
+				TweenService:Create(Input.InputFrame, TweenInfo.new(0.55, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, newWidth, 0, 42)}):Play()
 				TweenService:Create(Input.InputFrame, TweenInfo.new(0.55, Enum.EasingStyle.Exponential, Enum.EasingDirection.Out), {Size = UDim2.new(0, Input.InputFrame.InputBox.TextBounds.X + 52, 0, 30)}):Play()
 				if not InputSettings.Enter then
 					local Success, Response = pcall(function()
@@ -7194,4 +7237,59 @@ end
     t1:CreateDropdown({Callback = function(t) print(unpack(t)) end})
     t1:CreateDropdown({Description = "Special Type - Player", Callback = "", SpecialType = "Player"})
 end]]--
-return Luna
+local Window = Luna:CreateWindow({
+	Name = "Lonely | Fish It",
+	Subtitle = nil,
+	LogoID = "82795327169782",
+	LoadingEnabled = true,
+	LoadingTitle = "Loading...",
+	LoadingSubtitle = "By Lonely_Hub",
+	ConfigSettings = {
+		RootFolder = nil,
+		ConfigFolder = "Lonely_Hub"
+	},
+	KeySystem = false,
+})
+
+local MainAutofarmTab = Window:CreateTab({ Name = "Main Autofarm Tab", Icon = "view_in_ar", ImageSource = "Material", ShowTitle = true })
+
+
+MainAutofarmTab:CreateInput({
+	Name = "Position",
+	Description = "Set the position value here.",
+	PlaceholderText = "e.g. 1, 2, 3 or 1",
+	CurrentValue = "",
+	Numeric = false,
+	MaxCharacters = nil,
+	Enter = true,
+	Callback = function(value)
+
+	end
+})
+
+MainAutofarmTab:CreateInput({
+	Name = "Position",
+	Description = "Set the position value here.",
+	PlaceholderText = "e.g",
+	CurrentValue = "",
+	Numeric = false,
+	MaxCharacters = nil,
+	Enter = false,
+	Callback = function(value)
+
+	end
+})
+
+MainAutofarmTab:CreateInput({
+	Name = "Position",
+	Description = "Set the position value here.",
+	PlaceholderText = "",
+	CurrentValue = "",
+	Numeric = false,
+	MaxCharacters = nil,
+	Enter = true,
+	Callback = function(value)
+
+	end
+})
+return 
