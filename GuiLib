@@ -4692,6 +4692,232 @@ end
 			return ParagraphV
 		end
 
+
+		-- Enhanced CreateParagraph function with image support
+	-- Enhanced CreateParagraph function with image support
+	function Tab:CreateParagraphWithImages(ParagraphSettings)
+    ParagraphSettings = Kwargify({
+        Title = "Paragraph",
+        Text = "Lorem ipsum dolor sit amet...",
+        RichText = true,
+        Items = {}, -- Array of {Text = "...", Image = "rbxassetid://..."} for items with images
+        ImageSize = 32 -- Default image size in pixels (change this to adjust all images)
+    }, ParagraphSettings or {})
+
+    local ParagraphV = {
+        Settings = ParagraphSettings
+    }
+
+    local Paragraph = Elements.Template.Paragraph:Clone()
+    Paragraph.Title.Text = ParagraphSettings.Title
+    
+    -- If we have items with images, create a custom layout
+    if ParagraphSettings.Items and #ParagraphSettings.Items > 0 then
+        -- Hide the default text label
+        Paragraph.Text.Visible = false
+        
+        -- Create a ScrollingFrame for items
+        local ItemsContainer = Instance.new("ScrollingFrame")
+        ItemsContainer.Name = "ItemsContainer"
+        ItemsContainer.Size = UDim2.new(1, -20, 0, 300)
+        ItemsContainer.Position = UDim2.new(0, 10, 0, 30)
+        ItemsContainer.BackgroundTransparency = 1
+        ItemsContainer.BorderSizePixel = 0
+        ItemsContainer.ScrollBarThickness = 4
+        ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ItemsContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+        ItemsContainer.Parent = Paragraph
+        
+        -- Add UIListLayout
+        local ListLayout = Instance.new("UIListLayout")
+        ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        ListLayout.Padding = UDim.new(0, 2)  -- ADJUST THIS: Space between items (2 = tight, 5 = normal, 10 = loose)
+        ListLayout.Parent = ItemsContainer
+        
+        -- Store for later updates
+        ParagraphV.ItemsContainer = ItemsContainer
+        ParagraphV.ListLayout = ListLayout
+    else
+        -- Use default text display
+        Paragraph.Text.Text = ParagraphSettings.Text
+        Paragraph.Text.RichText = ParagraphSettings.RichText or false
+    end
+    
+    Paragraph.Visible = true
+    Paragraph.Parent = TabPage
+
+    Paragraph.BackgroundTransparency = 1
+    Paragraph.UIStroke.Transparency = 1
+    Paragraph.Title.TextTransparency = 1
+    if Paragraph.Text.Visible then
+        Paragraph.Text.TextTransparency = 1
+    end
+
+    TweenService:Create(Paragraph, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(Paragraph.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
+    TweenService:Create(Paragraph.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+    if Paragraph.Text.Visible then
+        TweenService:Create(Paragraph.Text, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+    end
+
+    function ParagraphV:CreateItemFrame(itemData)
+        -- Use paragraph-level ImageSize or item-level override
+        local IMAGE_SIZE = itemData.ImageSize or ParagraphSettings.ImageSize or 32
+        local FRAME_HEIGHT = IMAGE_SIZE + 6
+        local TEXT_OFFSET = IMAGE_SIZE + 10
+        
+        local ItemFrame = Instance.new("Frame")
+        ItemFrame.Size = UDim2.new(1, -10, 0, FRAME_HEIGHT)
+        ItemFrame.BackgroundTransparency = 1
+        ItemFrame.LayoutOrder = itemData.LayoutOrder or 0
+        
+        -- Add image if provided
+        if itemData.Image and itemData.Image ~= "" then
+            local ImageLabel = Instance.new("ImageLabel")
+            ImageLabel.Name = "ItemImage"
+            ImageLabel.Size = UDim2.new(0, IMAGE_SIZE, 0, IMAGE_SIZE)
+            ImageLabel.Position = UDim2.new(0, 5, 0, 3)
+            ImageLabel.BackgroundTransparency = 1
+            ImageLabel.Image = itemData.Image
+            ImageLabel.ScaleType = Enum.ScaleType.Fit
+            ImageLabel.Parent = ItemFrame
+            
+            -- Text label with offset for image
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Name = "ItemText"
+            TextLabel.Size = UDim2.new(1, -(TEXT_OFFSET + 10), 1, 0)
+            TextLabel.Position = UDim2.new(0, TEXT_OFFSET, 0, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = itemData.Text
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.TextSize = 14
+            TextLabel.Font = Enum.Font.Gotham
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.RichText = true
+            TextLabel.TextWrapped = true
+            TextLabel.Parent = ItemFrame
+        else
+            -- Text only
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Name = "ItemText"
+            TextLabel.Size = UDim2.new(1, -10, 1, 0)
+            TextLabel.Position = UDim2.new(0, 5, 0, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = itemData.Text
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.TextSize = 14
+            TextLabel.Font = Enum.Font.Gotham
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.RichText = true
+            TextLabel.TextWrapped = true
+            TextLabel.Parent = ItemFrame
+        end
+        
+        return ItemFrame
+    end
+
+    function ParagraphV:Update()
+        if ParagraphV.ItemsContainer then
+            -- Update items container
+            task.wait(0.05) -- Wait for layout to calculate
+            local totalHeight = ParagraphV.ListLayout.AbsoluteContentSize.Y
+            local maxHeight = 1000 -- ADJUST THIS: Maximum height in pixels before scrolling appears
+            local containerHeight = math.min(totalHeight + 10, maxHeight)
+            
+            ParagraphV.ItemsContainer.Size = UDim2.new(1, -20, 0, containerHeight)
+            ParagraphV.ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+            tween(Paragraph, {Size = UDim2.new(Paragraph.Size.X.Scale, Paragraph.Size.X.Offset, 0, containerHeight + 40)})
+        else
+            -- Update text-only paragraph
+            Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, math.huge)
+            Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y)
+            tween(Paragraph, {Size = UDim2.new(Paragraph.Size.X.Scale, Paragraph.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y + 40)})
+        end
+    end
+
+    function ParagraphV:Set(NewParagraphSettings)
+        NewParagraphSettings = Kwargify({
+            Title = ParagraphSettings.Title,
+            Text = ParagraphSettings.Text,
+            Items = ParagraphSettings.Items
+        }, NewParagraphSettings or {})
+
+        ParagraphV.Settings = NewParagraphSettings
+        Paragraph.Title.Text = NewParagraphSettings.Title
+
+        -- If we're switching to items mode
+        if NewParagraphSettings.Items and #NewParagraphSettings.Items > 0 then
+            if not ParagraphV.ItemsContainer then
+                -- Create items container if it doesn't exist
+                Paragraph.Text.Visible = false
+                
+                local ItemsContainer = Instance.new("ScrollingFrame")
+                ItemsContainer.Name = "ItemsContainer"
+                ItemsContainer.Size = UDim2.new(1, -20, 0, 300)
+                ItemsContainer.Position = UDim2.new(0, 10, 0, 30)
+                ItemsContainer.BackgroundTransparency = 1
+                ItemsContainer.BorderSizePixel = 0
+                ItemsContainer.ScrollBarThickness = 4
+                ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+                ItemsContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+                ItemsContainer.Parent = Paragraph
+                
+                local ListLayout = Instance.new("UIListLayout")
+                ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                ListLayout.Padding = UDim.new(0, 2)  -- ADJUST THIS: Space between items
+                ListLayout.Parent = ItemsContainer
+                
+                ParagraphV.ItemsContainer = ItemsContainer
+                ParagraphV.ListLayout = ListLayout
+            end
+            
+            -- Clear existing items
+            for _, child in ipairs(ParagraphV.ItemsContainer:GetChildren()) do
+                if child:IsA("Frame") then
+                    child:Destroy()
+                end
+            end
+            
+            -- Add new items
+            for i, itemData in ipairs(NewParagraphSettings.Items) do
+                itemData.LayoutOrder = i
+                local itemFrame = ParagraphV:CreateItemFrame(itemData)
+                itemFrame.Parent = ParagraphV.ItemsContainer
+            end
+        else
+            -- Switching to text mode
+            if ParagraphV.ItemsContainer then
+                ParagraphV.ItemsContainer:Destroy()
+                ParagraphV.ItemsContainer = nil
+                Paragraph.Text.Visible = true
+            end
+            Paragraph.Text.Text = NewParagraphSettings.Text
+        end
+
+        task.wait(0.1) -- Wait for layout to update
+        ParagraphV:Update()
+    end
+
+    function ParagraphV:Destroy()
+        Paragraph.Visible = false
+        Paragraph:Destroy()
+    end
+
+    -- Initial population if items provided
+    if ParagraphSettings.Items and #ParagraphSettings.Items > 0 then
+        for i, itemData in ipairs(ParagraphSettings.Items) do
+            itemData.LayoutOrder = i
+            local itemFrame = ParagraphV:CreateItemFrame(itemData)
+            itemFrame.Parent = ParagraphV.ItemsContainer
+        end
+    end
+
+    task.wait(0.1)
+    ParagraphV:Update()
+
+    return ParagraphV
+end
+
 		-- Slider
 		function Tab:CreateSlider(SliderSettings, Flag)
 			local SliderV = { IgnoreConfig = false, Class = "Slider", Settings = SliderSettings }
