@@ -4696,202 +4696,272 @@ end
 		-- COMPLETE REPLACEMENT FOR Tab:CreateParagraphWithImages
 -- Replace the entire function in your UI library with this
 
-local TweenService = game:GetService("TweenService")
-local originalCreateParagraph = Tab.CreateParagraphWithImages
-
 function Tab:CreateParagraphWithImages(ParagraphSettings)
-    -- Use the original function's Kwargify if available
-    local Kwargify = getfenv(originalCreateParagraph).Kwargify or function(defaults, settings)
-        settings = settings or {}
-        for k, v in pairs(defaults) do
-            if settings[k] == nil then
-                settings[k] = v
-            end
-        end
-        return settings
-    end
-    
     ParagraphSettings = Kwargify({
         Title = "Paragraph",
         Text = "Lorem ipsum dolor sit amet...",
         RichText = true,
-        Items = {},
-        ImageSize = 100,
-        Layout = "Vertical",
-        Columns = 3,
-        Spacing = 10
+        Items = {}, -- Array of {Text = "...", Image = "rbxassetid://...", Model = ModelInstance}
+        ImageSize = 32 -- Default image size in pixels
     }, ParagraphSettings or {})
 
-    -- Check if horizontal layout is requested
-    local isHorizontal = ParagraphSettings.Layout == "Horizontal"
-    
-    -- If NOT horizontal, use the original function
-    if not isHorizontal then
-        return originalCreateParagraph(self, ParagraphSettings)
-    end
-    
-    -- HORIZONTAL LAYOUT IMPLEMENTATION
-    local ParagraphV = { Settings = ParagraphSettings }
-    
-    -- Get necessary references from library environment
-    local env = getfenv(originalCreateParagraph)
-    local Elements = env.Elements
-    local TabPage = env.TabPage
-    local tween = env.tween or function(obj, props)
-        TweenService:Create(obj, TweenInfo.new(0.3), props):Play()
-    end
-    
+    local ParagraphV = {
+        Settings = ParagraphSettings
+    }
+
     local Paragraph = Elements.Template.Paragraph:Clone()
     Paragraph.Title.Text = ParagraphSettings.Title
-    Paragraph.Text.Visible = false
     
-    -- Create container with UIGridLayout for horizontal display
-    local ItemsContainer = Instance.new("ScrollingFrame")
-    ItemsContainer.Name = "ItemsContainer"
-    ItemsContainer.Size = UDim2.new(1, -20, 0, 300)
-    ItemsContainer.Position = UDim2.new(0, 10, 0, 30)
-    ItemsContainer.BackgroundTransparency = 1
-    ItemsContainer.BorderSizePixel = 0
-    ItemsContainer.ScrollBarThickness = 4
-    ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
-    ItemsContainer.ScrollingDirection = Enum.ScrollingDirection.Y
-    ItemsContainer.Parent = Paragraph
-    
-    -- Use UIGridLayout for horizontal wrapping
-    local GridLayout = Instance.new("UIGridLayout")
-    GridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    GridLayout.CellPadding = UDim2.new(0, ParagraphSettings.Spacing, 0, ParagraphSettings.Spacing)
-    
-    -- Calculate cell size with balanced aspect ratio
-    local containerWidth = 500 -- Approximate, will adjust on first render
-    local totalSpacing = (ParagraphSettings.Columns - 1) * ParagraphSettings.Spacing
-    local cellWidth = (containerWidth - totalSpacing - 20) / ParagraphSettings.Columns
-    local cellHeight = cellWidth * 1.2
-    
-    GridLayout.CellSize = UDim2.new(0, cellWidth, 0, cellHeight)
-    GridLayout.Parent = ItemsContainer
-    
-    ParagraphV.ItemsContainer = ItemsContainer
-    ParagraphV.GridLayout = GridLayout
+    -- If we have items with images, create a custom layout
+    if ParagraphSettings.Items and #ParagraphSettings.Items > 0 then
+        -- Hide the default text label
+        Paragraph.Text.Visible = false
+        
+        -- Create a ScrollingFrame for items
+        local ItemsContainer = Instance.new("ScrollingFrame")
+        ItemsContainer.Name = "ItemsContainer"
+        ItemsContainer.Size = UDim2.new(1, -20, 0, 300)
+        ItemsContainer.Position = UDim2.new(0, 10, 0, 30)
+        ItemsContainer.BackgroundTransparency = 1
+        ItemsContainer.BorderSizePixel = 0
+        ItemsContainer.ScrollBarThickness = 4
+        ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+        ItemsContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+        ItemsContainer.Parent = Paragraph
+        
+        -- Add UIListLayout
+        local ListLayout = Instance.new("UIListLayout")
+        ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        ListLayout.Padding = UDim.new(0, 2)
+        ListLayout.Parent = ItemsContainer
+        
+        -- Store for later updates
+        ParagraphV.ItemsContainer = ItemsContainer
+        ParagraphV.ListLayout = ListLayout
+    else
+        -- Use default text display
+        Paragraph.Text.Text = ParagraphSettings.Text
+        Paragraph.Text.RichText = ParagraphSettings.RichText or false
+    end
     
     Paragraph.Visible = true
     Paragraph.Parent = TabPage
-    
-    -- Animations
+
     Paragraph.BackgroundTransparency = 1
     Paragraph.UIStroke.Transparency = 1
     Paragraph.Title.TextTransparency = 1
-    
+    if Paragraph.Text.Visible then
+        Paragraph.Text.TextTransparency = 1
+    end
+
     TweenService:Create(Paragraph, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 1}):Play()
     TweenService:Create(Paragraph.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 0.5}):Play()
     TweenService:Create(Paragraph.Title, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
-    
-    -- Create item frames for horizontal layout
+    if Paragraph.Text.Visible then
+        TweenService:Create(Paragraph.Text, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {TextTransparency = 0}):Play()
+    end
+
     function ParagraphV:CreateItemFrame(itemData)
+        local IMAGE_SIZE = itemData.ImageSize or ParagraphSettings.ImageSize or 32
+        local FRAME_HEIGHT = IMAGE_SIZE + 6
+        local TEXT_OFFSET = IMAGE_SIZE + 10
+        
         local ItemFrame = Instance.new("Frame")
-        ItemFrame.Size = UDim2.new(1, 0, 1, 0)
+        ItemFrame.Size = UDim2.new(1, -10, 0, FRAME_HEIGHT)
         ItemFrame.BackgroundTransparency = 1
         ItemFrame.LayoutOrder = itemData.LayoutOrder or 0
         
-        -- Add 3D Model ViewportFrame
-        if itemData.Model then
+        -- Check if we have a Model to display (3D Model Support)
+        if itemData.Model ~= nil and typeof(itemData.Model) == "Instance" and itemData.Model:IsA("Model") then
+            -- Create ViewportFrame for 3D model
             local ViewportFrame = Instance.new("ViewportFrame")
             ViewportFrame.Name = "ItemViewport"
-            ViewportFrame.Size = UDim2.new(1, 0, 1, -25)
-            ViewportFrame.Position = UDim2.new(0, 0, 0, 0)
-            ViewportFrame.BackgroundTransparency = 1
-            ViewportFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            ViewportFrame.Size = UDim2.new(0, IMAGE_SIZE, 0, IMAGE_SIZE)
+            ViewportFrame.Position = UDim2.new(0, 5, 0, 3)
+            ViewportFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            ViewportFrame.BackgroundTransparency = 0.5
             ViewportFrame.BorderSizePixel = 0
-            ViewportFrame.Parent = ItemFrame
             
+            -- Create camera for viewport
             local Camera = Instance.new("Camera")
             Camera.Parent = ViewportFrame
             ViewportFrame.CurrentCamera = Camera
             
-            local modelClone = itemData.Model:Clone()
-            modelClone.Parent = ViewportFrame
+            -- Clone the model into viewport
+            local ModelClone = itemData.Model:Clone()
+            ModelClone.Parent = ViewportFrame
             
-            local modelCFrame, modelSize = modelClone:GetBoundingBox()
-            local maxSize = math.max(modelSize.X, modelSize.Y, modelSize.Z)
-            local distance = maxSize * 2
+            -- Position camera to view the model
+            local cf, size = ModelClone:GetBoundingBox()
+            Camera.CFrame = cf * CFrame.new(0, 0, size.Magnitude * 2)
+            Camera.Focus = cf
             
-            Camera.CFrame = CFrame.new(modelCFrame.Position + Vector3.new(0, 0, distance))
-            Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, modelCFrame.Position)
+            ViewportFrame.Parent = ItemFrame
             
-            if itemData.Rotate then
+            -- Optional: Add rotation animation
+            if itemData.Rotate and ModelClone.PrimaryPart then
                 task.spawn(function()
-                    while ViewportFrame.Parent do
+                    while ViewportFrame and ViewportFrame.Parent do
                         pcall(function()
-                            modelClone:SetPrimaryPartCFrame(modelClone:GetPrimaryPartCFrame() * CFrame.Angles(0, math.rad(1), 0))
+                            ModelClone:SetPrimaryPartCFrame(ModelClone.PrimaryPart.CFrame * CFrame.Angles(0, math.rad(1), 0))
                         end)
                         task.wait(0.03)
                     end
                 end)
             end
+            
+            -- Text label with offset for viewport
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Name = "ItemText"
+            TextLabel.Size = UDim2.new(1, -(TEXT_OFFSET + 10), 1, 0)
+            TextLabel.Position = UDim2.new(0, TEXT_OFFSET, 0, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = itemData.Text
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.TextSize = 14
+            TextLabel.Font = Enum.Font.Gotham
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.RichText = true
+            TextLabel.TextWrapped = true
+            TextLabel.Parent = ItemFrame
+            
+        -- Check if we have an Image URL
         elseif itemData.Image and itemData.Image ~= "" then
             local ImageLabel = Instance.new("ImageLabel")
             ImageLabel.Name = "ItemImage"
-            ImageLabel.Size = UDim2.new(1, 0, 1, -25)
-            ImageLabel.Position = UDim2.new(0, 0, 0, 0)
+            ImageLabel.Size = UDim2.new(0, IMAGE_SIZE, 0, IMAGE_SIZE)
+            ImageLabel.Position = UDim2.new(0, 5, 0, 3)
             ImageLabel.BackgroundTransparency = 1
             ImageLabel.Image = itemData.Image
             ImageLabel.ScaleType = Enum.ScaleType.Fit
             ImageLabel.Parent = ItemFrame
+            
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Name = "ItemText"
+            TextLabel.Size = UDim2.new(1, -(TEXT_OFFSET + 10), 1, 0)
+            TextLabel.Position = UDim2.new(0, TEXT_OFFSET, 0, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = itemData.Text
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.TextSize = 14
+            TextLabel.Font = Enum.Font.Gotham
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.RichText = true
+            TextLabel.TextWrapped = true
+            TextLabel.Parent = ItemFrame
+        else
+            -- Text only
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Name = "ItemText"
+            TextLabel.Size = UDim2.new(1, -10, 1, 0)
+            TextLabel.Position = UDim2.new(0, 5, 0, 0)
+            TextLabel.BackgroundTransparency = 1
+            TextLabel.Text = itemData.Text
+            TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.TextSize = 14
+            TextLabel.Font = Enum.Font.Gotham
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.RichText = true
+            TextLabel.TextWrapped = true
+            TextLabel.Parent = ItemFrame
         end
-        
-        -- Text label at bottom
-        local TextLabel = Instance.new("TextLabel")
-        TextLabel.Name = "ItemText"
-        TextLabel.Size = UDim2.new(1, 0, 0, 25)
-        TextLabel.Position = UDim2.new(0, 0, 1, -25)
-        TextLabel.BackgroundTransparency = 1
-        TextLabel.Text = itemData.Text
-        TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        TextLabel.TextSize = 14
-        TextLabel.Font = Enum.Font.GothamBold
-        TextLabel.TextXAlignment = Enum.TextXAlignment.Center
-        TextLabel.TextYAlignment = Enum.TextYAlignment.Center
-        TextLabel.RichText = true
-        TextLabel.TextWrapped = false
-        TextLabel.Parent = ItemFrame
         
         return ItemFrame
     end
-    
+
     function ParagraphV:Update()
-        task.wait(0.05)
-        local contentSize = GridLayout.AbsoluteContentSize
-        local maxHeight = 800
-        local containerHeight = math.min(contentSize.Y + 20, maxHeight)
-        
-        ItemsContainer.Size = UDim2.new(1, -20, 0, containerHeight)
-        ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, contentSize.Y + 10)
-        tween(Paragraph, {Size = UDim2.new(1, 0, 0, containerHeight + 40)})
-        
-        -- Recalculate cell size based on actual container width
-        local actualWidth = ItemsContainer.AbsoluteSize.X
-        if actualWidth > 0 then
-            local totalSpacing = (ParagraphSettings.Columns - 1) * ParagraphSettings.Spacing
-            local cellWidth = (actualWidth - totalSpacing - 20) / ParagraphSettings.Columns
-            local cellHeight = cellWidth * 1.2
-            GridLayout.CellSize = UDim2.new(0, cellWidth, 0, cellHeight)
+        if ParagraphV.ItemsContainer then
+            task.wait(0.05)
+            local totalHeight = ParagraphV.ListLayout.AbsoluteContentSize.Y
+            local maxHeight = 1000
+            local containerHeight = math.min(totalHeight + 10, maxHeight)
+            
+            ParagraphV.ItemsContainer.Size = UDim2.new(1, -20, 0, containerHeight)
+            ParagraphV.ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+            tween(Paragraph, {Size = UDim2.new(Paragraph.Size.X.Scale, Paragraph.Size.X.Offset, 0, containerHeight + 40)})
+        else
+            Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, math.huge)
+            Paragraph.Text.Size = UDim2.new(Paragraph.Text.Size.X.Scale, Paragraph.Text.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y)
+            tween(Paragraph, {Size = UDim2.new(Paragraph.Size.X.Scale, Paragraph.Size.X.Offset, 0, Paragraph.Text.TextBounds.Y + 40)})
         end
     end
-    
-    -- Populate items
+
+    function ParagraphV:Set(NewParagraphSettings)
+        NewParagraphSettings = Kwargify({
+            Title = ParagraphSettings.Title,
+            Text = ParagraphSettings.Text,
+            Items = ParagraphSettings.Items
+        }, NewParagraphSettings or {})
+
+        ParagraphV.Settings = NewParagraphSettings
+        Paragraph.Title.Text = NewParagraphSettings.Title
+
+        if NewParagraphSettings.Items and #NewParagraphSettings.Items > 0 then
+            if not ParagraphV.ItemsContainer then
+                Paragraph.Text.Visible = false
+                
+                local ItemsContainer = Instance.new("ScrollingFrame")
+                ItemsContainer.Name = "ItemsContainer"
+                ItemsContainer.Size = UDim2.new(1, -20, 0, 300)
+                ItemsContainer.Position = UDim2.new(0, 10, 0, 30)
+                ItemsContainer.BackgroundTransparency = 1
+                ItemsContainer.BorderSizePixel = 0
+                ItemsContainer.ScrollBarThickness = 4
+                ItemsContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+                ItemsContainer.ScrollingDirection = Enum.ScrollingDirection.Y
+                ItemsContainer.Parent = Paragraph
+                
+                local ListLayout = Instance.new("UIListLayout")
+                ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                ListLayout.Padding = UDim.new(0, 2)
+                ListLayout.Parent = ItemsContainer
+                
+                ParagraphV.ItemsContainer = ItemsContainer
+                ParagraphV.ListLayout = ListLayout
+            end
+            
+            for _, child in ipairs(ParagraphV.ItemsContainer:GetChildren()) do
+                if child:IsA("Frame") then
+                    child:Destroy()
+                end
+            end
+            
+            for i, itemData in ipairs(NewParagraphSettings.Items) do
+                itemData.LayoutOrder = i
+                local itemFrame = ParagraphV:CreateItemFrame(itemData)
+                itemFrame.Parent = ParagraphV.ItemsContainer
+            end
+        else
+            if ParagraphV.ItemsContainer then
+                ParagraphV.ItemsContainer:Destroy()
+                ParagraphV.ItemsContainer = nil
+                Paragraph.Text.Visible = true
+            end
+            Paragraph.Text.Text = NewParagraphSettings.Text
+        end
+
+        task.wait(0.1)
+        ParagraphV:Update()
+    end
+
+    function ParagraphV:Destroy()
+        Paragraph.Visible = false
+        Paragraph:Destroy()
+    end
+
     if ParagraphSettings.Items and #ParagraphSettings.Items > 0 then
         for i, itemData in ipairs(ParagraphSettings.Items) do
             itemData.LayoutOrder = i
             local itemFrame = ParagraphV:CreateItemFrame(itemData)
-            itemFrame.Parent = ItemsContainer
+            itemFrame.Parent = ParagraphV.ItemsContainer
         end
     end
-    
+
     task.wait(0.1)
     ParagraphV:Update()
-    
+
     return ParagraphV
-end
+    end
 
 		-- Slider
 		function Tab:CreateSlider(SliderSettings, Flag)
