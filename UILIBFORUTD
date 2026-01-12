@@ -4702,7 +4702,9 @@ function Tab:CreateParagraphWithImages(ParagraphSettings)
         Text = "Lorem ipsum dolor sit amet...",
         RichText = true,
         Items = {}, -- Array of {Text = "...", Image = "rbxassetid://...", Model = ModelInstance}
-        ImageSize = 32 -- Default image size in pixels
+        ImageSize = 32, -- Default image size in pixels
+        Columns = 3,     -- CHANGED: Set to 3 so all units stay in one row
+        Layout = "Horizontal"
     }, ParagraphSettings or {})
 
     local ParagraphV = {
